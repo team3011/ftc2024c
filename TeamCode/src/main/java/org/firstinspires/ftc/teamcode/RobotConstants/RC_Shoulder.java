@@ -15,4 +15,6 @@ public class RC_Shoulder {
     public static int stowPos = 0;
     public static int pickupPos = 0;
     public static int stackAttack = -110;
+    public static double ticksFor90 = 14.71;        // 1324 / 90
+    public static double startAngle = -16.8;
 }

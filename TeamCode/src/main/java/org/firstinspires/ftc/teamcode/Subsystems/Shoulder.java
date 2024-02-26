@@ -21,10 +21,6 @@ public class Shoulder {
     private PIDController controller;
     private boolean resetting = false;
 
-    //private double ticks_in_degrees = [number of ticks]/90.0;
-    private double ticks_in_degrees = 1500/90.0;
-    private double startAngle = -10;
-
     /**
      * Class constructor
      * @param m motor obj
@@ -68,19 +64,24 @@ public class Shoulder {
      * standard update function that will move the shoulder if not at the desired location
      */
     public void update(){
-        if (this.resetting) {
-            if (this.touch.isPressed()) {
-                this.resetting = false;
-                TelemetryData.shoulder_position = 0;
-            }
-        } else {
+        if (this.touch.isPressed()) {
+            TelemetryData.shoulder_position = 0;
+        }
+
+        //if (this.resetting) {
+        //    if (this.touch.isPressed()) {
+        //        this.resetting = false;
+        //    } else {
+        //        //move shoulder down
+        //    }
+        //} else {
             this.controller.setPID(RC_Shoulder.kP, RC_Shoulder.kI, RC_Shoulder.kD);
             TelemetryData.shoulder_position = this.motor.getCurrentPosition();
             double pid = this.controller.calculate(TelemetryData.shoulder_position, TelemetryData.shoulder_target);
             double ff = calcFeedForward();
             double power = pid + ff;
             this.motor.setPower(power);
-        }
+        //}
     }
 
     /**
@@ -97,12 +98,7 @@ public class Shoulder {
      * @return the calculated feedforward value
      */
     private double calcFeedForward(){
-        double temp = TelemetryData.shoulder_target / this.ticks_in_degrees + this.startAngle;
+        double temp = TelemetryData.shoulder_target / RC_Shoulder.ticksFor90 + RC_Shoulder.startAngle;
         return Math.cos(Math.toRadians(temp)) * RC_Shoulder.kF;
     }
-
-
-
-
-
 }
