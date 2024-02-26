@@ -4,7 +4,7 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class RC_Shoulder {
-    public static double kP = 0.015;
+    public static double kP = 0;
     public static double kI = 0;
     public static double kD = 0;
     public static double kF = 0;

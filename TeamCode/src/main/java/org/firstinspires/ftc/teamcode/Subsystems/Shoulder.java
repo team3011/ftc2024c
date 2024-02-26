@@ -10,7 +10,6 @@ https://www.youtube.com/watch?v=E6H6Nqe6qJo
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.teamcode.RobotConstants.RC_Shoulder;
@@ -20,7 +19,7 @@ public class Shoulder {
     private DcMotorEx motor;
     private TouchSensor touch;
     private PIDController controller;
-    private boolean reseting = false;
+    private boolean resetting = false;
 
     //private double ticks_in_degrees = [number of ticks]/90.0;
     private double ticks_in_degrees = 1500/90.0;
@@ -43,7 +42,7 @@ public class Shoulder {
 
         if (fromAuto) {
             if (!this.touch.isPressed()) {
-                this.reseting = true;
+                this.resetting = true;
             }
             TelemetryData.shoulder_position = 0;
         }
@@ -53,7 +52,7 @@ public class Shoulder {
      * this will reset the shoulder
      */
     public void resetShoulder(){
-        this.reseting = true;
+        this.resetting = true;
     }
 
     /**
@@ -69,9 +68,9 @@ public class Shoulder {
      * standard update function that will move the shoulder if not at the desired location
      */
     public void update(){
-        if (this.reseting) {
+        if (this.resetting) {
             if (this.touch.isPressed()) {
-                this.reseting = false;
+                this.resetting = false;
                 TelemetryData.shoulder_position = 0;
             }
         } else {
