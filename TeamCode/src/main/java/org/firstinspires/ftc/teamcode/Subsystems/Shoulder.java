@@ -20,6 +20,7 @@ public class Shoulder {
     private TouchSensor touch;
     private PIDController controller;
     private boolean resetting = false;
+    private boolean resetTriggered = false;
 
     /**
      * Class constructor
@@ -64,24 +65,31 @@ public class Shoulder {
      * standard update function that will move the shoulder if not at the desired location
      */
     public void update(){
-        if (this.touch.isPressed()) {
+        if (!this.resetTriggered && this.touch.isPressed()) {
             TelemetryData.shoulder_position = 0;
+            this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            this.resetTriggered = true;
+        } else if (!this.touch.isPressed()){
+            this.resetTriggered = false;
         }
+        this.controller.setPID(RC_Shoulder.kP, RC_Shoulder.kI, RC_Shoulder.kD);
+        TelemetryData.shoulder_position = this.motor.getCurrentPosition();
+        double pid = this.controller.calculate(TelemetryData.shoulder_position, TelemetryData.shoulder_target);
+        double ff = calcFeedForward();
+        double power = pid + ff;
 
-        //if (this.resetting) {
-        //    if (this.touch.isPressed()) {
-        //        this.resetting = false;
-        //    } else {
-        //        //move shoulder down
-        //    }
-        //} else {
-            this.controller.setPID(RC_Shoulder.kP, RC_Shoulder.kI, RC_Shoulder.kD);
-            TelemetryData.shoulder_position = this.motor.getCurrentPosition();
-            double pid = this.controller.calculate(TelemetryData.shoulder_position, TelemetryData.shoulder_target);
-            double ff = calcFeedForward();
-            double power = pid + ff;
+        if (this.touch.isPressed() && power < 0){
+            power = 0;
+        } else {
+            //if the motor is rotating faster than 800 units than we need to slow it down
+            if (Math.abs(this.motor.getVelocity()) > RC_Shoulder.maxVel) {
+                power *= calcVelocityLimiter();
+            }
             this.motor.setPower(power);
-        //}
+        }
+        TelemetryData.shoulder_velocity = this.motor.getVelocity();
+        TelemetryData.shoulder_power = power;
     }
 
     /**
@@ -98,7 +106,18 @@ public class Shoulder {
      * @return the calculated feedforward value
      */
     private double calcFeedForward(){
-        double temp = TelemetryData.shoulder_target / RC_Shoulder.ticksFor90 + RC_Shoulder.startAngle;
+        double temp = TelemetryData.shoulder_position / RC_Shoulder.ticksFor90 + RC_Shoulder.startAngle;
         return Math.cos(Math.toRadians(temp)) * RC_Shoulder.kF;
+    }
+
+    /**
+     * the purpose of this method is to limit the velocity of the motor so that crazy things do not happen
+     *
+     * @return the multiplier to reduce the power. will be a number less than 1
+     */
+    private double calcVelocityLimiter(){
+        double velocityOver = Math.abs(this.motor.getVelocity()) - RC_Shoulder.maxVel;
+        double fractionOver = velocityOver / RC_Shoulder.maxVel;
+        return 1 - fractionOver;
     }
 }
