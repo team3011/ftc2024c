@@ -21,6 +21,7 @@ public class Shoulder {
     private PIDController controller;
     private boolean resetting = false;
     private boolean resetTriggered = false;
+    private double lastPIDCalc = .001;
 
     /**
      * Class constructor
@@ -40,8 +41,11 @@ public class Shoulder {
         if (fromAuto) {
             if (!this.touch.isPressed()) {
                 this.resetting = true;
+            } else {
+                TelemetryData.shoulder_position = 0;
+                this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             }
-            TelemetryData.shoulder_position = 0;
         }
     }
 
@@ -76,18 +80,71 @@ public class Shoulder {
         this.controller.setPID(RC_Shoulder.kP, RC_Shoulder.kI, RC_Shoulder.kD);
         TelemetryData.shoulder_position = this.motor.getCurrentPosition();
         double pid = this.controller.calculate(TelemetryData.shoulder_position, TelemetryData.shoulder_target);
+        pid = pid/10;
+
+        TelemetryData.shoulder_pid = pid;
+        //this will limit the pid to a range of -1 to 1
+        if (pid > 1) {
+            pid = 1;
+        } else if (pid < -1) {
+            pid = -1;
+        }
+
+        //***********************************************
+        //this section reduces the acceleration by reducing how fast the pid calculation can change
+        if (lastPIDCalc > 0) {
+            if (pid > 0) {
+                if (pid - lastPIDCalc > .2) {
+                    pid = lastPIDCalc * RC_Shoulder.velMultiplier;
+                }
+            } else {
+                pid = -0.001;
+            }
+        } else {
+            if (pid < 0) {
+                if (pid - lastPIDCalc < -0.2) {
+                    pid = lastPIDCalc * RC_Shoulder.velMultiplier;
+                }
+
+            } else {
+                pid = 0.001;
+            }
+        }
+        lastPIDCalc = pid;
+        //**********************************************
+
         double ff = calcFeedForward();
         double power = pid + ff;
 
+        if (power > 1) {
+            power = 1;
+        } else if (power < -1) {
+            power = -1;
+        }
+
         if (this.touch.isPressed() && power < 0){
             power = 0;
+            this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            TelemetryData.shoulder_position = 0;
         } else {
-            //if the motor is rotating faster than 800 units than we need to slow it down
-            if (Math.abs(this.motor.getVelocity()) > RC_Shoulder.maxVel) {
-                power *= calcVelocityLimiter();
+            //limits the speed right before it touches the switch
+            if (power < 0 && TelemetryData.shoulder_position < 500) {
+                if (power < -0.1) {
+                    power = -0.1;
+                } else {
+                    power = -0.1;
+                }
             }
-            this.motor.setPower(power);
+            //limits the speed after straight up
+            if (power > 0 && TelemetryData.shoulder_position > 1600) {
+                if (power > 0.1) {
+                    power = 0.1;
+                }
+            }
+
         }
+        this.motor.setPower(power);
         TelemetryData.shoulder_velocity = this.motor.getVelocity();
         TelemetryData.shoulder_power = power;
     }
@@ -108,16 +165,5 @@ public class Shoulder {
     private double calcFeedForward(){
         double temp = TelemetryData.shoulder_position / RC_Shoulder.ticksFor90 + RC_Shoulder.startAngle;
         return Math.cos(Math.toRadians(temp)) * RC_Shoulder.kF;
-    }
-
-    /**
-     * the purpose of this method is to limit the velocity of the motor so that crazy things do not happen
-     *
-     * @return the multiplier to reduce the power. will be a number less than 1
-     */
-    private double calcVelocityLimiter(){
-        double velocityOver = Math.abs(this.motor.getVelocity()) - RC_Shoulder.maxVel;
-        double fractionOver = velocityOver / RC_Shoulder.maxVel;
-        return 1 - fractionOver;
     }
 }

@@ -41,6 +41,7 @@ public class SubSystem_Test extends LinearOpMode {
             telemetry.addData("shoulder target", TelemetryData.shoulder_target);
             telemetry.addData("shoulder power", TelemetryData.shoulder_power);
             telemetry.addData("shoulder velocity", TelemetryData.shoulder_velocity);
+            telemetry.addData("shoulder pid", TelemetryData.shoulder_pid);
             telemetry.update();
 
         }

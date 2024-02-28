@@ -9,5 +9,6 @@ public class TelemetryData {
     public static double shoulder_velocity;
     public static int shoulder_target;
     public static double shoulder_power = 0;
+    public static double shoulder_pid;
 
 }
