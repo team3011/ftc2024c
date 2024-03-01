@@ -4,11 +4,11 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
-
-import org.firstinspires.ftc.teamcode.RobotConstants.RC_Shoulder;
 import org.firstinspires.ftc.teamcode.RobotConstants.RobotConstants;
 import org.firstinspires.ftc.teamcode.RobotConstants.TelemetryData;
+import org.firstinspires.ftc.teamcode.Subsystems.Launcher;
 import org.firstinspires.ftc.teamcode.Subsystems.Shoulder;
 
 @TeleOp(name = "SubSystem_Test")
@@ -20,11 +20,13 @@ public class SubSystem_Test extends LinearOpMode {
         FtcDashboard dashboard = FtcDashboard.getInstance();
         telemetry = dashboard.getTelemetry();
 
-
+        Launcher launcher = new Launcher(
+                hardwareMap.get(Servo.class,"airplane"));
         Shoulder shoulder = new Shoulder(
                 hardwareMap.get(DcMotorEx.class, "shoulder"),
                 hardwareMap.get(TouchSensor.class, "shoulderSensor"),
                 true);
+
         double left_y = gamepad1.left_stick_y;
         double right_y = gamepad1.right_stick_y;
         double left_x = gamepad1.left_stick_x;
@@ -36,12 +38,13 @@ public class SubSystem_Test extends LinearOpMode {
             left_x = zeroAnalogInput(gamepad1.left_stick_x);
             right_x = zeroAnalogInput(gamepad1.right_stick_x);
 
-            shoulder.update();
-            telemetry.addData("shoulder position", TelemetryData.shoulder_position);
-            telemetry.addData("shoulder target", TelemetryData.shoulder_target);
-            telemetry.addData("shoulder power", TelemetryData.shoulder_power);
-            telemetry.addData("shoulder velocity", TelemetryData.shoulder_velocity);
-            telemetry.addData("shoulder pid", TelemetryData.shoulder_pid);
+            launcher.launchIt();
+            //shoulder.update();
+            //telemetry.addData("shoulder position", TelemetryData.shoulder_position);
+            //telemetry.addData("shoulder target", TelemetryData.shoulder_target);
+            //telemetry.addData("shoulder power", TelemetryData.shoulder_power);
+            //telemetry.addData("shoulder velocity", TelemetryData.shoulder_velocity);
+            //telemetry.addData("shoulder pid", TelemetryData.shoulder_pid);
             telemetry.update();
 
         }
