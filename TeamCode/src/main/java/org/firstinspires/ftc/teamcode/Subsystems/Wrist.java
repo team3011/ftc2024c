@@ -9,6 +9,7 @@ public class Wrist {
     public Servo leftWrist;
     public Servo rightWrist;
     private double target;
+    private double currentPos;
     private int time;
     private ElapsedTime timer = new ElapsedTime();
     private double moveIncrement;
@@ -46,17 +47,11 @@ public class Wrist {
      *          a value of 0 will move at the max servo speed
      */
     public void setTarget(double input, int t) {
-        if (input != TelemetryData.wrist_position) {
-            if (t != 0) {
-                this.target = input;
-                this.time = t;
-                this.timer.reset();
-                this.moveIncrement = (input - TelemetryData.wrist_position) / t;
-            } else {
-                this.leftWrist.setPosition(input);
-                this.rightWrist.setPosition(input);
-                TelemetryData.wrist_position = input;
-            }
+        if (input != this.currentPos) {
+            this.target = input;
+            this.time = t;
+            this.timer.reset();
+            this.moveIncrement = (input - this.currentPos) / t;
         }
     }
 
@@ -64,20 +59,16 @@ public class Wrist {
      * standard update function that will move the wrist if not at the desired location
      */
     public void update(){
-        if (this.leftWrist.getPosition() != TelemetryData.wrist_position) {
-            double duration = this.timer.milliseconds();
-
-            if (Math.abs(TelemetryData.wrist_position - this.target) > .01 && duration < this.time) {
-                double temp = TelemetryData.wrist_position + duration * this.moveIncrement;
-                this.leftWrist.setPosition(temp);
-                this.rightWrist.setPosition(temp);
-                TelemetryData.wrist_position = temp;
-                //return temp;
-            } else {
-                this.leftWrist.setPosition(this.target);
-                this.rightWrist.setPosition(this.target);
-                TelemetryData.wrist_position = this.target;
-            }
+        double duration = this.timer.milliseconds();
+        if (Math.abs(this.currentPos-this.target)>.01 && duration < this.time) {
+            double temp = this.currentPos + duration * this.moveIncrement;
+            this.leftWrist.setPosition(temp);
+            this.rightWrist.setPosition(temp);
+            //return temp;
+        } else {
+            this.leftWrist.setPosition(this.target);
+            this.rightWrist.setPosition(this.target);
+            this.currentPos = this.target;
         }
     }
 }

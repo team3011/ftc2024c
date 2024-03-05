@@ -10,7 +10,7 @@ public class TelemetryData {
     public static int shoulder_target;
     public static double shoulder_power = 0;
     public static double shoulder_pid;
-    public static double telescope_position;
+    public static int telescope_position;
     public static double telescope_power;
     public static double telescope_pid;
     public static double telescope_target;

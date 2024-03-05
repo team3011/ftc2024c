@@ -9,4 +9,7 @@ public class RC_Telescope {
     public static double kD = 0.001;
     public static double kF = 0.05;
     public static double velMultiplier = 1.1;
+    public static int stowPos = 500;
+    public static int pickupPos = 1000;
+    public static int dropOffHigh = 1000;
 }

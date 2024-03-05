@@ -95,7 +95,7 @@ public class Shoulder {
                 }
             }
             //limits the speed after straight up
-            if (power > 0 && TelemetryData.shoulder_position > 1600) {
+            if (power > 0 && TelemetryData.shoulder_position > 1300) {
                 if (power > 0.1) {
                     power = 0.1;
                 }

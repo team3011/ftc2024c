@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.teamcode.RobotConstants.RC_Wrist;
 import org.firstinspires.ftc.teamcode.RobotConstants.TelemetryData;
 import org.firstinspires.ftc.teamcode.Subsystems.Arm;
 import org.firstinspires.ftc.teamcode.Subsystems.Claw;
@@ -28,6 +29,7 @@ public class Tele_Red extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         boolean fromAuto = true;
+        boolean isRed = true;
         FtcDashboard dashboard = FtcDashboard.getInstance();
         telemetry = dashboard.getTelemetry();
         GamepadEx myGamePad = new GamepadEx(gamepad1);
@@ -62,7 +64,7 @@ public class Tele_Red extends LinearOpMode {
                 navx,
                 fromAuto);
 
-        Arm arm = new Arm(shoulder, telescope, claw, lift, wrist, navx, blinkin, fromAuto);
+        Arm arm = new Arm(shoulder, telescope, claw, lift, wrist, navx, blinkin, fromAuto, isRed);
 
         ElapsedTime timer = new ElapsedTime();
         telemetry.log().add("Gyro Calibrating. Do Not Move!");
@@ -85,6 +87,10 @@ public class Tele_Red extends LinearOpMode {
         double right_x = gamepad1.right_stick_x;
         double left_t = gamepad1.left_trigger;
         double right_t = gamepad1.right_trigger;
+        boolean a_state = false;
+        boolean b_state = false;
+        boolean x_state = false;
+        boolean y_state = false;
 
 
         while(opModeIsActive()){
@@ -99,13 +105,19 @@ public class Tele_Red extends LinearOpMode {
             if (myGamePad.wasJustReleased(GamepadKeys.Button.A)) {
                 arm.moveToPickup();
             }
-
             if (myGamePad.wasJustReleased(GamepadKeys.Button.X)) {
                 arm.moveToStow();
             }
+            if (myGamePad.wasJustReleased(GamepadKeys.Button.Y)) {
+                arm.moveToDropOff();
+            }
 
+            arm.manualMoveB(-right_y);
             arm.updateEverything();
-            telemetry.addData("wrist position", TelemetryData.wrist_position);
+            telemetry.addData("telescope position", TelemetryData.telescope_position);
+            telemetry.addData("telescope power", TelemetryData.telescope_power);
+            telemetry.addData("shoulder position", TelemetryData.shoulder_position);
+            telemetry.addData("shoulder power", TelemetryData.shoulder_power);
             telemetry.update();
 
         }

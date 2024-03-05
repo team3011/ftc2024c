@@ -17,6 +17,8 @@ public class Telescope {
     private int resetStage = 0;
     private boolean resetTriggered = false;
     private double lastPIDCalc = .001;
+    private int lastTarget = 0;
+    private boolean manualEngaged = false;
 
     /**
      * Class constructor
@@ -46,70 +48,83 @@ public class Telescope {
     }
 
     public void manualMove(double input) {
-        TelemetryData.telescope_position = this.motor.getCurrentPosition();
-        if (this.touch.isPressed() && input < 0 && !this.resetTriggered) {
-            this.motor.setPower(0);
-            this.resetTriggered = true;
-            TelemetryData.telescope_power = 0;
-            TelemetryData.telescope_position = 0;
-            this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        } else if (TelemetryData.telescope_position > 2800 && input > 0) {
-            this.motor.setPower(0);
-            TelemetryData.telescope_power = 0;
+        if (input != 0) {
+            this.manualEngaged = true;
+            TelemetryData.telescope_position = this.motor.getCurrentPosition();
+            TelemetryData.telescope_target = TelemetryData.telescope_position;
+            RC_Telescope.dropOffHigh = TelemetryData.telescope_position;
+            if (this.touch.isPressed() && input < 0 && !this.resetTriggered) {
+                this.motor.setPower(0);
+                this.resetTriggered = true;
+                TelemetryData.telescope_power = 0;
+                TelemetryData.telescope_position = 0;
+                this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            } else if (TelemetryData.telescope_position > 2800 && input > 0) {
+                this.motor.setPower(0);
+                TelemetryData.telescope_power = 0;
+            } else {
+                this.motor.setPower(input);
+                TelemetryData.telescope_power = input;
+                this.resetTriggered = false;
+            }
         } else {
-            this.motor.setPower(input);
-            TelemetryData.telescope_power = input;
-            this.resetTriggered = false;
+            this.manualEngaged = false;
         }
+
+    }
+
+    public void setPosition(int t){
+        TelemetryData.telescope_target = t;
     }
 
     /**
      * standard update function that will move the shoulder if not at the desired location
      */
     public void update(){
-        double power = 0;
-        TelemetryData.telescope_position = this.motor.getCurrentPosition();
-        if (TelemetryData.telescope_target != 0) {
-            this.resetTriggered = false;
-            this.resetStage = 1;
-        }
-        //our target is either 0 or not 0
-        if (TelemetryData.telescope_target == 0) {
-            if (TelemetryData.shoulder_target == 0 && TelemetryData.shoulder_position > 50) {
+        if (!this.manualEngaged) {
+            double power = 0;
+            TelemetryData.telescope_position = this.motor.getCurrentPosition();
+            if (TelemetryData.telescope_target != 0) {
+                this.resetTriggered = false;
                 this.resetStage = 1;
             }
-            //we need to touch and back off the sensor
-            if (this.touch.isPressed()) {
-                power = 0.1;
-                this.resetTriggered = true;
-                this.resetStage = -1;
+            //our target is either 0 or not 0
+            if (TelemetryData.telescope_target == 0) {
+                if (TelemetryData.shoulder_target == 0 && TelemetryData.shoulder_position > 50) {
+                    this.resetStage = 1;
+                }
+                //we need to touch and back off the sensor
+                if (this.touch.isPressed()) {
+                    power = 0.1;
+                    this.resetTriggered = true;
+                    this.resetStage = -1;
 
-            } else {
-                if (this.resetStage == 1) {
-                    if (TelemetryData.telescope_position > 500) {
-                        power = calcPower();
-                    } else {
-                        power = -.1;
+                } else {
+                    if (this.resetStage == 1) {
+                        if (TelemetryData.telescope_position > 500) {
+                            power = calcPower();
+                        } else {
+                            power = -.15;
+                        }
+                    } else if (this.resetStage == -1) {
+                        power = 0;
+                        this.resetStage = 0;
+                        TelemetryData.telescope_position = 0;
+                        this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
                     }
-                } else if (this.resetStage == -1) {
+                }
+            } else {
+                if (Math.abs(TelemetryData.telescope_position - TelemetryData.telescope_target) > 10) {
+                    power = calcPower();
+                } else {
                     power = 0;
-                    this.resetStage = 0;
-                    TelemetryData.telescope_position = 0;
-                    this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                    this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
                 }
             }
-        } else {
-            if (Math.abs(TelemetryData.telescope_position - TelemetryData.telescope_target) > 10) {
-                power = calcPower();
-            } else {
-                power = 0;
-            }
+            this.motor.setPower(power);
+            TelemetryData.telescope_power = power;
         }
-        this.motor.setPower(power);
-        TelemetryData.telescope_power = power;
-
     }
 
     private double calcPower() {

@@ -25,6 +25,8 @@ import org.firstinspires.ftc.teamcode.Subsystems.Wrist;
 public class SubSystem_Test extends LinearOpMode {
     @Override
     public void runOpMode() {
+        boolean fromAuto = true;
+        boolean isRed = true;
 
         //this section allows us to access telemetry data from a browser
         FtcDashboard dashboard = FtcDashboard.getInstance();
@@ -61,7 +63,7 @@ public class SubSystem_Test extends LinearOpMode {
                 navx,
                 true);
 
-        Arm arm = new Arm(shoulder, telescope, claw, lift, wrist, navx, blinkin, true);
+        Arm arm = new Arm(shoulder, telescope, claw, lift, wrist, navx, blinkin, fromAuto, isRed);
 
 
         double left_y = gamepad1.left_stick_y;
