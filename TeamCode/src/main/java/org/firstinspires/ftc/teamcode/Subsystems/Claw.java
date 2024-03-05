@@ -10,7 +10,7 @@ public class Claw {
     private Servo right;
     private TouchSensor sensor;
 
-    public Claw(Servo leftClaw, Servo rightClaw, TouchSensor s) {
+    public Claw(Servo leftClaw, Servo rightClaw, TouchSensor s, boolean fromAuto) {
         this.left = leftClaw;
         this.right = rightClaw;
         this.sensor = s;
