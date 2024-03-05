@@ -1,25 +1,20 @@
 package org.firstinspires.ftc.teamcode.Subsystems;
 
-
-/*
-Instructions on feedforward PID control can be found here:
-https://www.youtube.com/watch?v=E6H6Nqe6qJo
- */
-
-
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.teamcode.RobotConstants.RC_Shoulder;
+import org.firstinspires.ftc.teamcode.RobotConstants.RC_Telescope;
 import org.firstinspires.ftc.teamcode.RobotConstants.TelemetryData;
 
-public class Shoulder {
+public class Telescope {
     private DcMotorEx motor;
     private TouchSensor touch;
     private PIDController controller;
     private boolean resetting = false;
+    private int resetStage = 0;
     private boolean resetTriggered = false;
     private double lastPIDCalc = .001;
 
@@ -29,7 +24,7 @@ public class Shoulder {
      * @param t touch sensor obj
      * @param fromAuto was the constructor called from auto or tele
      */
-    public Shoulder(DcMotorEx m, TouchSensor t, boolean fromAuto) {
+    public Telescope(DcMotorEx m, TouchSensor t, boolean fromAuto) {
         this.motor = m;
         this.touch = t;
         this.motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -40,80 +35,90 @@ public class Shoulder {
 
         if (fromAuto) {
             if (!this.touch.isPressed()) {
-                this.resetting = true;
+                this.resetStage = 1;
             } else {
                 TelemetryData.shoulder_position = 0;
                 this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                 this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                this.resetStage = 0;
             }
         }
     }
 
-    /**
-     * this will reset the shoulder
-     */
-    public void resetShoulder(){
-        this.resetting = true;
-    }
-
-    /**
-     * set target position of the shoulder
-     * @param t the target position in tick marks,
-     *          0 is on the touch sensor
-     */
-    public void setPosition(int t){
-        TelemetryData.shoulder_target = t;
+    public void manualMove(double input) {
+        TelemetryData.telescope_position = this.motor.getCurrentPosition();
+        if (this.touch.isPressed() && input < 0 && !this.resetTriggered) {
+            this.motor.setPower(0);
+            this.resetTriggered = true;
+            TelemetryData.telescope_power = 0;
+            TelemetryData.telescope_position = 0;
+            this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        } else if (TelemetryData.telescope_position > 2800 && input > 0) {
+            this.motor.setPower(0);
+            TelemetryData.telescope_power = 0;
+        } else {
+            this.motor.setPower(input);
+            TelemetryData.telescope_power = input;
+            this.resetTriggered = false;
+        }
     }
 
     /**
      * standard update function that will move the shoulder if not at the desired location
      */
     public void update(){
-        if (!this.resetTriggered && this.touch.isPressed()) {
-            TelemetryData.shoulder_position = 0;
-            this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            this.resetTriggered = true;
-        } else if (!this.touch.isPressed()){
+        double power = 0;
+        TelemetryData.telescope_position = this.motor.getCurrentPosition();
+        if (TelemetryData.telescope_target != 0) {
             this.resetTriggered = false;
+            this.resetStage = 1;
         }
+        //our target is either 0 or not 0
+        if (TelemetryData.telescope_target == 0) {
+            if (TelemetryData.shoulder_target == 0 && TelemetryData.shoulder_position > 50) {
+                this.resetStage = 1;
+            }
+            //we need to touch and back off the sensor
+            if (this.touch.isPressed()) {
+                power = 0.1;
+                this.resetTriggered = true;
+                this.resetStage = -1;
 
-        double power = calcPower();
-
-        if (this.touch.isPressed() && power < 0){
-            power = 0;
-            this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            TelemetryData.shoulder_position = 0;
-        } else {
-            //limits the speed right before it touches the switch
-            if (power < 0 && TelemetryData.shoulder_position < 500) {
-                if (power < -0.1) {
-                    power = -0.1;
-                } else {
-                    power = -0.1;
+            } else {
+                if (this.resetStage == 1) {
+                    if (TelemetryData.telescope_position > 500) {
+                        power = calcPower();
+                    } else {
+                        power = -.1;
+                    }
+                } else if (this.resetStage == -1) {
+                    power = 0;
+                    this.resetStage = 0;
+                    TelemetryData.telescope_position = 0;
+                    this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
                 }
             }
-            //limits the speed after straight up
-            if (power > 0 && TelemetryData.shoulder_position > 1600) {
-                if (power > 0.1) {
-                    power = 0.1;
-                }
+        } else {
+            if (Math.abs(TelemetryData.telescope_position - TelemetryData.telescope_target) > 10) {
+                power = calcPower();
+            } else {
+                power = 0;
             }
         }
         this.motor.setPower(power);
-        TelemetryData.shoulder_velocity = this.motor.getVelocity();
-        TelemetryData.shoulder_power = power;
+        TelemetryData.telescope_power = power;
+
     }
 
     private double calcPower() {
         double power = 0;
-        this.controller.setPID(RC_Shoulder.kP, RC_Shoulder.kI, RC_Shoulder.kD);
-        TelemetryData.shoulder_position = this.motor.getCurrentPosition();
-        double pid = this.controller.calculate(TelemetryData.shoulder_position, TelemetryData.shoulder_target);
+        this.controller.setPID(RC_Telescope.kP, RC_Telescope.kI, RC_Telescope.kD);
+        double pid = this.controller.calculate(TelemetryData.telescope_position, TelemetryData.telescope_target);
         pid = pid/10;
 
-        TelemetryData.shoulder_pid = pid;
+        TelemetryData.telescope_pid = pid;
         //this will limit the pid to a range of -1 to 1
         if (pid > 1) {
             pid = 1;
@@ -126,7 +131,7 @@ public class Shoulder {
         if (this.lastPIDCalc > 0) {
             if (pid > 0) {
                 if (pid - this.lastPIDCalc > .2) {
-                    pid = this.lastPIDCalc * RC_Shoulder.velMultiplier;
+                    pid = this.lastPIDCalc * RC_Telescope.velMultiplier;
                 }
             } else {
                 pid = -0.001;
@@ -134,7 +139,7 @@ public class Shoulder {
         } else {
             if (pid < 0) {
                 if (pid - this.lastPIDCalc < -0.2) {
-                    pid = this.lastPIDCalc * RC_Shoulder.velMultiplier;
+                    pid = this.lastPIDCalc * RC_Telescope.velMultiplier;
                 }
 
             } else {
@@ -170,6 +175,6 @@ public class Shoulder {
      */
     private double calcFeedForward(){
         double temp = TelemetryData.shoulder_position / RC_Shoulder.ticksFor90 + RC_Shoulder.startAngle;
-        return Math.cos(Math.toRadians(temp)) * RC_Shoulder.kF;
+        return Math.sin(Math.toRadians(temp)) * RC_Telescope.kF;
     }
 }
