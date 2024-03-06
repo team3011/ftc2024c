@@ -53,7 +53,7 @@ public class Telescope {
             TelemetryData.telescope_position = this.motor.getCurrentPosition();
             TelemetryData.telescope_target = TelemetryData.telescope_position;
             RC_Telescope.dropOffHigh = TelemetryData.telescope_position;
-            if (this.touch.isPressed() && input < 0 && !this.resetTriggered) {
+            if (this.touch.isPressed() && input < 0) {
                 this.motor.setPower(0);
                 this.resetTriggered = true;
                 TelemetryData.telescope_power = 0;
@@ -85,10 +85,6 @@ public class Telescope {
         if (!this.manualEngaged) {
             double power = 0;
             TelemetryData.telescope_position = this.motor.getCurrentPosition();
-            if (TelemetryData.telescope_target != 0) {
-                this.resetTriggered = false;
-                this.resetStage = 1;
-            }
             //our target is either 0 or not 0
             if (TelemetryData.telescope_target == 0) {
                 if (TelemetryData.shoulder_target == 0 && TelemetryData.shoulder_position > 50) {
@@ -111,11 +107,13 @@ public class Telescope {
                         power = 0;
                         this.resetStage = 0;
                         TelemetryData.telescope_position = 0;
-                        this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                        this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                        this.motor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+                        this.motor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
                     }
                 }
             } else {
+                this.resetTriggered = false;
+                this.resetStage = 1;
                 if (Math.abs(TelemetryData.telescope_position - TelemetryData.telescope_target) > 10) {
                     power = calcPower();
                 } else {

@@ -21,6 +21,7 @@ public class Shoulder {
     private PIDController controller;
     private boolean resetting = false;
     private boolean resetTriggered = false;
+    private int resetStage = 0;
     private double lastPIDCalc = .001;
 
     /**
@@ -40,11 +41,12 @@ public class Shoulder {
 
         if (fromAuto) {
             if (!this.touch.isPressed()) {
-                this.resetting = true;
+                this.resetStage = 1;
             } else {
                 TelemetryData.shoulder_position = 0;
                 this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                 this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                this.resetStage = 0;
             }
         }
     }
@@ -69,6 +71,34 @@ public class Shoulder {
      * standard update function that will move the shoulder if not at the desired location
      */
     public void update(){
+        double power = 0;
+        TelemetryData.shoulder_position = this.motor.getCurrentPosition();
+        //our target is either 0 or not 0
+        if (TelemetryData.shoulder_target == 0) {
+            if (TelemetryData.shoulder_position < 600 && !this.touch.isPressed()) {
+                power = -0.1;
+            } else if (this.touch.isPressed()) {
+                power = 0;
+                TelemetryData.shoulder_position = 0;
+                this.motor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+                this.motor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+            } else {
+                power = calcPower();
+            }
+        } else {
+            //limits the speed after straight up
+            if (power > 0 && TelemetryData.shoulder_position > 1300) {
+                if (power > 0.1) {
+                    power = 0.1;
+                }
+            } else {
+                power = calcPower();
+            }
+        }
+
+        this.motor.setPower(power);
+        TelemetryData.shoulder_power = power;
+        /*
         if (!this.resetTriggered && this.touch.isPressed()) {
             TelemetryData.shoulder_position = 0;
             this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -104,6 +134,8 @@ public class Shoulder {
         this.motor.setPower(power);
         TelemetryData.shoulder_velocity = this.motor.getVelocity();
         TelemetryData.shoulder_power = power;
+
+         */
     }
 
     private double calcPower() {
