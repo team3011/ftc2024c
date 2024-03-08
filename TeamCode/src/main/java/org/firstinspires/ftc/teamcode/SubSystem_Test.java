@@ -81,6 +81,7 @@ public class SubSystem_Test extends LinearOpMode {
             //shoulder.update();
             //telescope.manualMove(left_y);
             //telescope.update();
+            lift.moveManual(right_y);
             telemetry.addData("telescope position", TelemetryData.telescope_position);
             telemetry.addData("telescope power", TelemetryData.telescope_power);
             telemetry.addData("shoulder position", TelemetryData.shoulder_position);
@@ -88,6 +89,7 @@ public class SubSystem_Test extends LinearOpMode {
             telemetry.update();
 
         }
+
     }
 
     /**

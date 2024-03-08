@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.RobotConstants.RC_Shoulder;
 import org.firstinspires.ftc.teamcode.RobotConstants.RC_Telescope;
 import org.firstinspires.ftc.teamcode.RobotConstants.TelemetryData;
@@ -47,6 +48,13 @@ public class Telescope {
         }
     }
 
+    public void reset(){
+        TelemetryData.telescope_position = 0;
+        TelemetryData.telescope_target = 0;
+        this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
     public void manualMove(double input) {
         if (input != 0) {
             this.manualEngaged = true;
@@ -70,6 +78,11 @@ public class Telescope {
             }
         } else {
             this.manualEngaged = false;
+            if (this.touch.isPressed()) {
+                this.motor.setPower(.2);
+            } else {
+                this.motor.setPower(0);
+            }
         }
 
     }
@@ -101,7 +114,7 @@ public class Telescope {
                         if (TelemetryData.telescope_position > 500) {
                             power = calcPower();
                         } else {
-                            power = -.15;
+                            power = -.2;
                         }
                     } else if (this.resetStage == -1) {
                         power = 0;
@@ -114,7 +127,17 @@ public class Telescope {
             } else {
                 this.resetTriggered = false;
                 this.resetStage = 1;
-                if (Math.abs(TelemetryData.telescope_position - TelemetryData.telescope_target) > 10) {
+                if (this.touch.isPressed()) {
+                    power = 0.2;
+                } else if (TelemetryData.shoulder_target == RC_Shoulder.dropOffPos) {
+                    if (this.touch.isPressed()) {
+                        power = 0.3;
+                    } else if (TelemetryData.shoulder_position > 1300 ) {
+                        power = calcPower();
+                    } else {
+                        power = 0;
+                    }
+                } else if (Math.abs(TelemetryData.telescope_position - TelemetryData.telescope_target) > 10) {
                     power = calcPower();
                 } else {
                     power = 0;
@@ -123,6 +146,10 @@ public class Telescope {
             this.motor.setPower(power);
             TelemetryData.telescope_power = power;
         }
+    }
+
+    public int returnStage(){
+        return this.resetStage;
     }
 
     private double calcPower() {
@@ -189,5 +216,13 @@ public class Telescope {
     private double calcFeedForward(){
         double temp = TelemetryData.shoulder_position / RC_Shoulder.ticksFor90 + RC_Shoulder.startAngle;
         return Math.sin(Math.toRadians(temp)) * RC_Telescope.kF;
+    }
+
+    public void getCurrent(){
+        TelemetryData.telescope_current = this.motor.getCurrent(CurrentUnit.MILLIAMPS);
+    }
+
+    public boolean isPressed(){
+        return this.touch.isPressed();
     }
 }

@@ -8,12 +8,11 @@ import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.teamcode.RobotConstants.RC_Wrist;
+import org.firstinspires.ftc.teamcode.RobotConstants.RC_Drive;
 import org.firstinspires.ftc.teamcode.RobotConstants.TelemetryData;
 import org.firstinspires.ftc.teamcode.Subsystems.Arm;
 import org.firstinspires.ftc.teamcode.Subsystems.Claw;
@@ -24,11 +23,14 @@ import org.firstinspires.ftc.teamcode.Subsystems.Shoulder;
 import org.firstinspires.ftc.teamcode.Subsystems.Telescope;
 import org.firstinspires.ftc.teamcode.Subsystems.Wrist;
 
+
+// excellent resource on programming mecanum wheels
+// https://gm0.org/en/latest/docs/software/tutorials/mecanum-drive.html#field-centric-final-sample-code
 @TeleOp(name = "RED")
 public class Tele_Red extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
-        boolean fromAuto = true;
+        boolean fromAuto = false;
         boolean isRed = true;
         FtcDashboard dashboard = FtcDashboard.getInstance();
         telemetry = dashboard.getTelemetry();
@@ -91,6 +93,9 @@ public class Tele_Red extends LinearOpMode {
         boolean b_state = false;
         boolean x_state = false;
         boolean y_state = false;
+        boolean shoulderWasMoving = false;
+        boolean lifting = false;
+        boolean endGameStarted = false;
 
 
         while(opModeIsActive()){
@@ -102,18 +107,57 @@ public class Tele_Red extends LinearOpMode {
             left_t = -zeroAnalogInput(gamepad1.left_trigger);
             right_t = zeroAnalogInput(gamepad1.right_trigger);
 
-            if (myGamePad.wasJustReleased(GamepadKeys.Button.A)) {
+            if (!myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER) && myGamePad.wasJustReleased(GamepadKeys.Button.A)) {
                 arm.moveToPickup();
             }
-            if (myGamePad.wasJustReleased(GamepadKeys.Button.X)) {
+            if (!myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER) && myGamePad.wasJustReleased(GamepadKeys.Button.X)) {
                 arm.moveToStow();
+                TelemetryData.liftStage = -3;
             }
-            if (myGamePad.wasJustReleased(GamepadKeys.Button.Y)) {
+            if (!myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER) && myGamePad.wasJustReleased(GamepadKeys.Button.Y)) {
                 arm.moveToDropOff();
             }
+            if (myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER) && myGamePad.isDown(GamepadKeys.Button.Y)) {
+                driveTrain.setHeadingToMaintain(0);
+            }
+            if (myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER) && myGamePad.isDown(GamepadKeys.Button.X)) {
+                driveTrain.setHeadingToMaintain(1.57);
+            }
+            if (myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER) && myGamePad.isDown(GamepadKeys.Button.A)) {
+                driveTrain.setHeadingToMaintain(3.14);
+            }
+            if (myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER) && myGamePad.isDown(GamepadKeys.Button.B)) {
+                driveTrain.setHeadingToMaintain(-1.57);
+            }
 
-            arm.manualMoveB(-right_y);
-            arm.updateEverything();
+            if (left_t != 0) {
+                endGameStarted = true;
+                shoulderWasMoving = true;
+                arm.prepForLift(left_t);
+            } else if (shoulderWasMoving) {
+                shoulderWasMoving = false;
+                arm.prepForLift(0);
+            }
+            if (right_t != 0) {
+                lifting = true;
+                arm.lifting(right_t);
+            } else if (lifting) {
+                lifting = false;
+                arm.lifting(0);
+            }
+
+            driveTrain.drive(RC_Drive.red_leftXInverse * left_x, RC_Drive.red_leftYInverse * left_y, RC_Drive.red_rightXInverse * right_x);
+
+            if (!endGameStarted) {
+                arm.manualMoveB(-right_y);
+                arm.updateEverything();
+            }
+
+            //telemetry.addData("yaw", TelemetryData.yaw);
+            //telemetry.addData("what heading do", TelemetryData.whatHeadingDo);
+            telemetry.addData("lift stage", TelemetryData.liftStage);
+            telemetry.addData("shoulder current",TelemetryData.shoulder_current);
+            telemetry.addData("telescope current",TelemetryData.telescope_current);
             telemetry.addData("telescope position", TelemetryData.telescope_position);
             telemetry.addData("telescope power", TelemetryData.telescope_power);
             telemetry.addData("shoulder position", TelemetryData.shoulder_position);
@@ -122,7 +166,7 @@ public class Tele_Red extends LinearOpMode {
 
         }
 
-        //driveTrain.drive(0,0,0);
+        driveTrain.drive(0,0,0);
     }
 
     private double zeroAnalogInput(double input){

@@ -14,4 +14,9 @@ public class TelemetryData {
     public static double telescope_power;
     public static double telescope_pid;
     public static double telescope_target;
+    public static double yaw;
+    public static String whatHeadingDo;
+    public static int liftStage = -3;
+    public static double telescope_current;
+    public static double shoulder_current;
 }

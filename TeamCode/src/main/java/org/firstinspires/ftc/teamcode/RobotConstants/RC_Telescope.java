@@ -12,4 +12,5 @@ public class RC_Telescope {
     public static int stowPos = 500;
     public static int pickupPos = 1000;
     public static int dropOffHigh = 1000;
+    public static int prepForLift = 2200;
 }

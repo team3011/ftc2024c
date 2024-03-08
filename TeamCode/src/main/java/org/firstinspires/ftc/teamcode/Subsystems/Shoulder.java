@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.RobotConstants.RC_Shoulder;
 import org.firstinspires.ftc.teamcode.RobotConstants.TelemetryData;
 
@@ -23,6 +24,7 @@ public class Shoulder {
     private boolean resetTriggered = false;
     private int resetStage = 0;
     private double lastPIDCalc = .001;
+    private boolean manualMoving = false;
 
     /**
      * Class constructor
@@ -51,11 +53,30 @@ public class Shoulder {
         }
     }
 
-    /**
-     * this will reset the shoulder
-     */
-    public void resetShoulder(){
-        this.resetting = true;
+    public void reset(){
+        TelemetryData.shoulder_position = 0;
+        TelemetryData.shoulder_target = 0;
+        this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    //input > 0 shoulder goes down
+    public double moveManual(double input){
+        double power = input;
+        this.manualMoving = true;
+        TelemetryData.shoulder_target = this.motor.getCurrentPosition();
+        TelemetryData.shoulder_position = TelemetryData.shoulder_target;
+        if (this.touch.isPressed() && input < 0) {
+            this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            power = 0;
+        } else if (TelemetryData.shoulder_position > 2300 && input > 0){
+            power = 0;
+        }
+        this.motor.setPower(power);
+        TelemetryData.shoulder_target = this.motor.getCurrentPosition();
+        TelemetryData.shoulder_position = TelemetryData.shoulder_target;
+        return power;
     }
 
     /**
@@ -71,71 +92,35 @@ public class Shoulder {
      * standard update function that will move the shoulder if not at the desired location
      */
     public void update(){
-        double power = 0;
-        TelemetryData.shoulder_position = this.motor.getCurrentPosition();
-        //our target is either 0 or not 0
-        if (TelemetryData.shoulder_target == 0) {
-            if (TelemetryData.shoulder_position < 600 && !this.touch.isPressed()) {
-                power = -0.1;
-            } else if (this.touch.isPressed()) {
-                power = 0;
-                TelemetryData.shoulder_position = 0;
-                this.motor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
-                this.motor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
-            } else {
-                power = calcPower();
-            }
-        } else {
-            //limits the speed after straight up
-            if (power > 0 && TelemetryData.shoulder_position > 1300) {
-                if (power > 0.1) {
-                    power = 0.1;
-                }
-            } else {
-                power = calcPower();
-            }
-        }
-
-        this.motor.setPower(power);
-        TelemetryData.shoulder_power = power;
-        /*
-        if (!this.resetTriggered && this.touch.isPressed()) {
-            TelemetryData.shoulder_position = 0;
-            this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            this.resetTriggered = true;
-        } else if (!this.touch.isPressed()){
-            this.resetTriggered = false;
-        }
-
-        double power = calcPower();
-
-        if (this.touch.isPressed() && power < 0){
-            power = 0;
-            this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            TelemetryData.shoulder_position = 0;
-        } else {
-            //limits the speed right before it touches the switch
-            if (power < 0 && TelemetryData.shoulder_position < 500) {
-                if (power < -0.1) {
+        if (!this.manualMoving) {
+            double power = 0;
+            TelemetryData.shoulder_position = this.motor.getCurrentPosition();
+            //our target is either 0 or not 0
+            if (TelemetryData.shoulder_target == 0) {
+                if (TelemetryData.shoulder_position < 600 && !this.touch.isPressed()) {
                     power = -0.1;
+                } else if (this.touch.isPressed()) {
+                    power = 0;
+                    TelemetryData.shoulder_position = 0;
+                    this.motor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+                    this.motor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
                 } else {
-                    power = -0.1;
+                    power = calcPower();
+                }
+            } else {
+                //limits the speed after straight up
+                if (power > 0 && TelemetryData.shoulder_position > 1300) {
+                    if (power > 0.1) {
+                        power = 0.1;
+                    }
+                } else {
+                    power = calcPower();
                 }
             }
-            //limits the speed after straight up
-            if (power > 0 && TelemetryData.shoulder_position > 1300) {
-                if (power > 0.1) {
-                    power = 0.1;
-                }
-            }
-        }
-        this.motor.setPower(power);
-        TelemetryData.shoulder_velocity = this.motor.getVelocity();
-        TelemetryData.shoulder_power = power;
 
-         */
+            this.motor.setPower(power);
+            TelemetryData.shoulder_power = power;
+        }
     }
 
     private double calcPower() {
@@ -203,5 +188,9 @@ public class Shoulder {
     private double calcFeedForward(){
         double temp = TelemetryData.shoulder_position / RC_Shoulder.ticksFor90 + RC_Shoulder.startAngle;
         return Math.cos(Math.toRadians(temp)) * RC_Shoulder.kF;
+    }
+
+    public void getCurrent(){
+        TelemetryData.shoulder_current = this.motor.getCurrent(CurrentUnit.MILLIAMPS);
     }
 }

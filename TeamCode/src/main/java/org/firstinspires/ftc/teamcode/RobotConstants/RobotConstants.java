@@ -5,4 +5,5 @@ import com.acmerobotics.dashboard.config.Config;
 @Config
 public class RobotConstants {
     public static double analogTol = 0.1;
+    public static float cameraConf = .4f;
 }

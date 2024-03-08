@@ -10,4 +10,5 @@ public class RC_Wrist {
     public static int stowTime = 1000;
     public static int pickupTime = 1000;
     public static int dropOffTime = 1000;
+    public static double prepToLift = 0.5;
 }
