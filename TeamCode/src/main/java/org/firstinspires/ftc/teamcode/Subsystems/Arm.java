@@ -84,10 +84,35 @@ public class Arm {
     }
 
     public void manualMoveB(double input){
-        //double power = this.shoulder.moveManual(input);
-        //this.telescope.moveManual(power/3.33);
-        //this.lift.moveManual(input);
         this.telescope.manualMove(input*.5);
+    }
+
+    public void manualMoveA(double input){
+        this.shoulder.moveManual(input*.5);
+        if (input != 0) {
+            if (TelemetryData.whatHeadingDo < -1.20 || TelemetryData.whatHeadingDo > 4.5) {
+                double revWrist = 0.2;
+                if (TelemetryData.shoulder_position > 500) {
+                    revWrist = revWrist - (TelemetryData.shoulder_position - 500) / 3000.0;
+                }
+                if (revWrist > 0.63) {
+                    revWrist = 0.25;
+                } else if (revWrist < 0.07) {
+                    revWrist = 0.07;
+                }
+                TelemetryData.revWrist = revWrist;
+                RC_Wrist.dropOffPosRev = revWrist;
+                this.wrist.setPosition(revWrist);
+
+                //@500 shoulder i need .2 wrist
+                //@800 shoulder i need .1 wrist
+
+                //RC_Wrist.dropOffPosRev = revWrist;
+                //this.wrist.setTarget(revWrist,1);
+                //TelemetryData.wrist_position = revWrist;
+                //this.wrist.update();
+            }
+        }
     }
     public void moveToPickup(){
         if (this.state != 1) {
@@ -116,34 +141,48 @@ public class Arm {
             Thread.sleep(RC_Claw.dropTopPause);
         }
 
-        this.shoulder.setPosition(RC_Shoulder.stowPos);
         this.telescope.setPosition(RC_Telescope.stowPos);
+        this.shoulder.setPosition(RC_Shoulder.stowPos);
         this.wrist.setTarget(RC_Wrist.stowPos,RC_Wrist.stowTime);
         this.state = 0;
     }
 
     public void moveToDropOff(){
         if (this.state != -1) {
-            this.shoulder.setPosition(RC_Shoulder.dropOffPos);
-            this.telescope.setPosition(RC_Telescope.dropOffHigh);
-            this.wrist.setTarget(RC_Wrist.dropOffPos, RC_Wrist.dropOffTime);
+            if (TelemetryData.whatHeadingDo < -1.20 || TelemetryData.whatHeadingDo > 4.5) {
+                //we are facing the board
+                this.shoulder.setPosition(RC_Shoulder.dropOffPosRev);
+                this.telescope.setPosition(RC_Telescope.dropOffHighRev);
+                this.wrist.setTarget(RC_Wrist.dropOffPosRev, RC_Wrist.dropOffTime);
+            } else {
+                //we are facing normally
+                this.shoulder.setPosition(RC_Shoulder.dropOffPos);
+                this.telescope.setPosition(RC_Telescope.dropOffHigh);
+                this.wrist.setTarget(RC_Wrist.dropOffPos, RC_Wrist.dropOffTime);
+            }
             this.state = 1;
         }
     }
 
     public void updateEverything() throws InterruptedException {
-        this.wrist.update();
-        this.shoulder.update();
-        if (this.autoPickup && this.claw.getClawSensor()) {
-            moveToStow();
-            this.autoPickup = false;
-            this.blinkin.setPattern(this.violet);
-            this.colorTimer.reset();
+        if (this.state == 0 && Math.abs(TelemetryData.telescope_target - TelemetryData.telescope_position) > 50 &&
+                (TelemetryData.whatHeadingDo < -1.20 || TelemetryData.whatHeadingDo > 4.5)) {
+            //we need to move the telescope first
+            this.telescope.update();
+        } else {
+            this.wrist.update();
+            this.shoulder.update();
+            if (this.autoPickup && this.claw.getClawSensor()) {
+                moveToStow();
+                this.autoPickup = false;
+                this.blinkin.setPattern(this.violet);
+                this.colorTimer.reset();
+            }
+            if (this.colorTimer.seconds() > 2) {
+                this.blinkin.setPattern(this.mainColor);
+            }
+            this.telescope.update();
         }
-        if (this.colorTimer.seconds()>2){
-            this.blinkin.setPattern(this.mainColor);
-        }
-        this.telescope.update();
     }
 
     public void prepForLift(double input) {
@@ -242,6 +281,4 @@ public class Arm {
         this.claw.closeTop();
         this.claw.closeBottom();
     }
-
-
 }

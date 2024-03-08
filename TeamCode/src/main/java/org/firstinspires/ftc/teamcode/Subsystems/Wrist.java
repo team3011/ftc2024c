@@ -38,6 +38,14 @@ public class Wrist {
         }
     }
 
+    public void setPosition(double input){
+        this.leftWrist.setPosition(input);
+        this.rightWrist.setPosition(input);
+        this.currentPos = input;
+        this.target = input;
+        TelemetryData.wrist_position = this.currentPos;
+    }
+
     /**
      * Will set desired target for the servo and the time it will take to get there
      * servo will move gradually to target in the update function
@@ -70,5 +78,6 @@ public class Wrist {
             this.rightWrist.setPosition(this.target);
             this.currentPos = this.target;
         }
+        TelemetryData.wrist_position = this.currentPos;
     }
 }

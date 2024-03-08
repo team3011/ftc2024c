@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.teamcode.RobotConstants.RC_Claw;
+import org.firstinspires.ftc.teamcode.RobotConstants.TelemetryData;
 
 public class Claw {
     private Servo left;
@@ -16,7 +17,11 @@ public class Claw {
         this.sensor = s;
     }
     public void openBottom(){
-        this.left.setPosition(RC_Claw.openBottom);
+        if (TelemetryData.whatHeadingDo < -1.20 || TelemetryData.whatHeadingDo > 4.5) {
+            this.left.setPosition(RC_Claw.openBottomRev);
+        } else {
+            this.left.setPosition(RC_Claw.openBottom);
+        }
     }
 
     public void closeBottom(){
@@ -24,7 +29,11 @@ public class Claw {
     }
 
     public void openTop(){
-        this.right.setPosition(RC_Claw.openTop);
+        if (TelemetryData.whatHeadingDo < -1.20 || TelemetryData.whatHeadingDo > 4.5) {
+            this.right.setPosition(RC_Claw.openTopRev);
+        } else {
+            this.right.setPosition(RC_Claw.openTop);
+        }
     }
 
     public void closeTop(){

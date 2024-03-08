@@ -41,6 +41,8 @@ public class Drive {
         if (fromAuto) {
             this.backLeft.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
             this.backRight.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        } else {
+            setHeadingToMaintain(Math.toRadians(RC_Drive.yaw_from_auto));
         }
         this.backLeft.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
         this.backRight.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
@@ -95,26 +97,26 @@ public class Drive {
 
         Orientation angles = this.gyro.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
 
-        TelemetryData.yaw = Math.round(angles.firstAngle * 10) / 10.0;
-        double robotHeading = Math.toRadians(angles.firstAngle);
+        TelemetryData.yaw = Math.round(angles.firstAngle * 10) / 10.0 + RC_Drive.yaw_from_auto;
+        double robotHeading = Math.toRadians(TelemetryData.yaw);
 
         if(rx == 0){ //this means that we're trying to maintain our current heading
-
+            double shorter = this.figureOutWhatIsShorter(robotHeading);
             //prevents the motors from working when they realistically cant
             boolean isWithinAngularTolerance =
-                    Math.abs(this.figureOutWhatIsShorter()) < RC_Drive.ANGULAR_TOLERANCE;
+                    Math.abs(shorter) < RC_Drive.ANGULAR_TOLERANCE;
 
             //we turn if we're not within a tolerance
             if(!isWithinAngularTolerance){
-                rx = this.figureOutWhatIsShorter(); //retrieves direction, magnitude overwritten
+                rx = shorter; //retrieves direction, magnitude overwritten
                 rx = this.setToMinimumTurningSpeed(rx); //overwrites magnitude to minimum speed
             }
 
-            TelemetryData.whatHeadingDo =
-                    String.format(Locale.getDefault(),"Maintaining Desired Heading of %.2f",
-                            Math.toDegrees(headingToMaintain));
+            TelemetryData.whatHeadingDo = headingToMaintain;
+                    //String.format(Locale.getDefault(),"Maintaining Desired Heading of %.2f",
+                    //        headingToMaintain);
         }else{
-            TelemetryData.whatHeadingDo = "Turning";
+            //TelemetryData.whatHeadingDo = "Turning";
             //we're going to maintain our new heading once we've stopped turning.
             //not before we've turned
             this.headingToMaintain = robotHeading;
@@ -142,10 +144,8 @@ public class Drive {
      *  heading.
      * @return the shorter difference in heading
      */
-    public double figureOutWhatIsShorter() {
+    public double figureOutWhatIsShorter(double reading) {
         double result;
-        Orientation angles = this.gyro.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-        double reading = Math.toRadians(angles.firstAngle);
         double oppositeButEqualReading;
 
         if (reading > 0) {
@@ -186,5 +186,9 @@ public class Drive {
         }
     }
 
+    /**
+     *
+     * @param input in radians
+     */
     public void setHeadingToMaintain(double input){ this.headingToMaintain = input; }
 }

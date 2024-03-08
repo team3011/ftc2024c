@@ -7,12 +7,18 @@ import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.IntegratingGyroscope;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.teamcode.RobotConstants.RC_Drive;
 import org.firstinspires.ftc.teamcode.RobotConstants.TelemetryData;
 import org.firstinspires.ftc.teamcode.Subsystems.Arm;
 import org.firstinspires.ftc.teamcode.Subsystems.Camera;
@@ -40,6 +46,7 @@ public class Auto_Red extends LinearOpMode{
         telemetry = dashboard.getTelemetry();
         GamepadEx myGamePad = new GamepadEx(gamepad1);
         NavxMicroNavigationSensor navx = hardwareMap.get(NavxMicroNavigationSensor.class, "navx");
+        IntegratingGyroscope gyro = (IntegratingGyroscope) navx;
         Launcher launcher = new Launcher(
                 hardwareMap.get(Servo.class, "airplane"));
         Shoulder shoulder = new Shoulder(
@@ -117,9 +124,14 @@ public class Auto_Red extends LinearOpMode{
         boolean startTimer = false;
 
         arm.initialMove();
+        Orientation angles = gyro.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        double yaw = Math.round(angles.firstAngle * 10) / 10.0;
         while (opModeIsActive()) {
+            angles = gyro.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+            yaw = Math.round(angles.firstAngle * 10) / 10.0;
             //updated
             arm.updateEverything();
+            telemetry.addData("yaw", yaw);
             telemetry.addData("telescope target", TelemetryData.telescope_target);
             telemetry.addData("shoulder target", TelemetryData.shoulder_target);
             telemetry.addData("telescope position", TelemetryData.telescope_position);
@@ -127,6 +139,8 @@ public class Auto_Red extends LinearOpMode{
             telemetry.addData("shoulder position", TelemetryData.shoulder_position);
             telemetry.addData("shoulder power", TelemetryData.shoulder_power);
             telemetry.update();
+            RC_Drive.yaw_from_auto = yaw;
         }
+        RC_Drive.yaw_from_auto = yaw;
     }
 }

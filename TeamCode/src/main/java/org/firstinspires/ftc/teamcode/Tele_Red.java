@@ -149,21 +149,28 @@ public class Tele_Red extends LinearOpMode {
             driveTrain.drive(RC_Drive.red_leftXInverse * left_x, RC_Drive.red_leftYInverse * left_y, RC_Drive.red_rightXInverse * right_x);
 
             if (!endGameStarted) {
-                arm.manualMoveB(-right_y);
+                if (!myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER)) {
+                    arm.manualMoveB(-right_y);
+                } else {
+                    arm.manualMoveA(-right_y);
+                }
                 arm.updateEverything();
             }
 
-            //telemetry.addData("yaw", TelemetryData.yaw);
-            //telemetry.addData("what heading do", TelemetryData.whatHeadingDo);
+            telemetry.addData("yaw", TelemetryData.yaw);
+            telemetry.addData("revWrist", TelemetryData.revWrist);
+            //telemetry.addData("yaw offset from auto", RC_Drive.yaw_from_auto);
+            telemetry.addData("wrist position", TelemetryData.wrist_position);
+            telemetry.addData("maintain heading of", TelemetryData.whatHeadingDo);
             telemetry.addData("telescope target", TelemetryData.telescope_target);
             telemetry.addData("shoulder target", TelemetryData.shoulder_target);
-            telemetry.addData("lift stage", TelemetryData.liftStage);
-            telemetry.addData("shoulder current",TelemetryData.shoulder_current);
-            telemetry.addData("telescope current",TelemetryData.telescope_current);
+            //telemetry.addData("lift stage", TelemetryData.liftStage);
+            //telemetry.addData("shoulder current",TelemetryData.shoulder_current);
+            //telemetry.addData("telescope current",TelemetryData.telescope_current);
             telemetry.addData("telescope position", TelemetryData.telescope_position);
-            telemetry.addData("telescope power", TelemetryData.telescope_power);
+            //telemetry.addData("telescope power", TelemetryData.telescope_power);
             telemetry.addData("shoulder position", TelemetryData.shoulder_position);
-            telemetry.addData("shoulder power", TelemetryData.shoulder_power);
+            //telemetry.addData("shoulder power", TelemetryData.shoulder_power);
             telemetry.update();
 
         }

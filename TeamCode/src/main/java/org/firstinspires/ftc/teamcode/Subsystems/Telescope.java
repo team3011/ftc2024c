@@ -60,7 +60,11 @@ public class Telescope {
             this.manualEngaged = true;
             TelemetryData.telescope_position = this.motor.getCurrentPosition();
             TelemetryData.telescope_target = TelemetryData.telescope_position;
-            RC_Telescope.dropOffHigh = TelemetryData.telescope_position;
+            if (TelemetryData.whatHeadingDo < -1.20 || TelemetryData.whatHeadingDo > 4.5) {
+                RC_Telescope.dropOffHighRev = TelemetryData.telescope_position;
+            } else {
+                RC_Telescope.dropOffHigh = TelemetryData.telescope_position;
+            }
             if (this.touch.isPressed() && input < 0) {
                 this.motor.setPower(0);
                 this.resetTriggered = true;
@@ -78,11 +82,11 @@ public class Telescope {
             }
         } else {
             this.manualEngaged = false;
-            if (this.touch.isPressed()) {
-                this.motor.setPower(.2);
-            } else {
-                this.motor.setPower(0);
-            }
+            //if (this.touch.isPressed()) {
+            //    this.motor.setPower(.2);
+            //} else {
+            //    this.motor.setPower(0);
+           // }
         }
 
     }

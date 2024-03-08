@@ -16,6 +16,7 @@ public class RC_Drive {
     public static double rotation_multi = 0.5;                  //decreasing this will reduce how fast we rotate
     public static final double MINIMUM_TURNING_SPEED = 0.05;
     public static final double ANGULAR_TOLERANCE = 0.00872665;  //this is 0.5 degrees
+    public static double yaw_from_auto = 0;
     //public static final double x_kP = 0.009;
     //public static final double x_kI = 0;
     //public static final double x_kD = 0.0001;

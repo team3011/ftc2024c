@@ -14,6 +14,7 @@ import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.RobotConstants.RC_Shoulder;
+import org.firstinspires.ftc.teamcode.RobotConstants.RC_Telescope;
 import org.firstinspires.ftc.teamcode.RobotConstants.TelemetryData;
 
 public class Shoulder {
@@ -63,20 +64,26 @@ public class Shoulder {
     //input > 0 shoulder goes down
     public double moveManual(double input){
         double power = input;
-        this.manualMoving = true;
-        TelemetryData.shoulder_target = this.motor.getCurrentPosition();
-        TelemetryData.shoulder_position = TelemetryData.shoulder_target;
-        if (this.touch.isPressed() && input < 0) {
-            this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            power = 0;
-        } else if (TelemetryData.shoulder_position > 2300 && input > 0){
-            power = 0;
+        if (input != 0) {
+            this.manualMoving = true;
+            TelemetryData.shoulder_target = this.motor.getCurrentPosition();
+            TelemetryData.shoulder_position = TelemetryData.shoulder_target;
+            if (this.touch.isPressed() && input < 0) {
+                this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                power = 0;
+            } else if (TelemetryData.shoulder_position > 2300 && input > 0) {
+                power = 0;
+            }
+            this.motor.setPower(power);
+            TelemetryData.shoulder_power = power;
+
+            if (TelemetryData.whatHeadingDo < -1.20 || TelemetryData.whatHeadingDo > 4.5) {
+                RC_Shoulder.dropOffPosRev = TelemetryData.shoulder_position;
+            }
+        } else {
+            this.manualMoving = false;
         }
-        this.motor.setPower(power);
-        TelemetryData.shoulder_power = power;
-        TelemetryData.shoulder_target = this.motor.getCurrentPosition();
-        TelemetryData.shoulder_position = TelemetryData.shoulder_target;
         return power;
     }
 
