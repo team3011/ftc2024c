@@ -26,7 +26,7 @@ import org.firstinspires.ftc.teamcode.Subsystems.Wrist;
 
 // excellent resource on programming mecanum wheels
 // https://gm0.org/en/latest/docs/software/tutorials/mecanum-drive.html#field-centric-final-sample-code
-@TeleOp(name = "RED")
+@TeleOp(name = "TELE_RED")
 public class Tele_Red extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
@@ -155,6 +155,8 @@ public class Tele_Red extends LinearOpMode {
 
             //telemetry.addData("yaw", TelemetryData.yaw);
             //telemetry.addData("what heading do", TelemetryData.whatHeadingDo);
+            telemetry.addData("telescope target", TelemetryData.telescope_target);
+            telemetry.addData("shoulder target", TelemetryData.shoulder_target);
             telemetry.addData("lift stage", TelemetryData.liftStage);
             telemetry.addData("shoulder current",TelemetryData.shoulder_current);
             telemetry.addData("telescope current",TelemetryData.telescope_current);

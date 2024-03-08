@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.teamcode.RobotConstants.TelemetryData;
 import org.firstinspires.ftc.teamcode.Subsystems.Arm;
 import org.firstinspires.ftc.teamcode.Subsystems.Camera;
 import org.firstinspires.ftc.teamcode.Subsystems.Claw;
@@ -25,7 +26,7 @@ import org.firstinspires.ftc.teamcode.Subsystems.Wrist;
 
 
 import java.util.List;
-@Autonomous(name = "Auto_Red")
+@Autonomous(name = "AUTO_RED")
 public class Auto_Red extends LinearOpMode{
 
 
@@ -118,6 +119,13 @@ public class Auto_Red extends LinearOpMode{
         arm.initialMove();
         while (opModeIsActive()) {
             arm.updateEverything();
+            telemetry.addData("telescope target", TelemetryData.telescope_target);
+            telemetry.addData("shoulder target", TelemetryData.shoulder_target);
+            telemetry.addData("telescope position", TelemetryData.telescope_position);
+            telemetry.addData("telescope power", TelemetryData.telescope_power);
+            telemetry.addData("shoulder position", TelemetryData.shoulder_position);
+            telemetry.addData("shoulder power", TelemetryData.shoulder_power);
+            telemetry.update();
         }
     }
 }

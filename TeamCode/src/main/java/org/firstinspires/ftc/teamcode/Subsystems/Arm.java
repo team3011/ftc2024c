@@ -163,7 +163,7 @@ public class Arm {
             TelemetryData.telescope_target = 0;
             this.shoulder.update();
             this.telescope.update();
-            if (this.telescope.returnStage() == 0 & Math.abs(TelemetryData.shoulder_target - TelemetryData.shoulder_position) < 100) {
+            if (this.telescope.returnStage() < 1 & Math.abs(TelemetryData.shoulder_target - TelemetryData.shoulder_position) < 100) {
                 TelemetryData.liftStage = -1;
             }
         } else if (TelemetryData.liftStage == -1) {
@@ -206,6 +206,7 @@ public class Arm {
         } else if (TelemetryData.liftStage == 1) {
             //move telescope up to above bar
             if (TelemetryData.telescope_position < RC_Telescope.prepForLift) {
+                this.shoulder.update();
                 this.telescope.manualMove(-input);
                 this.telescope.getCurrent();
                 if (TelemetryData.telescope_current > 600) {
@@ -233,6 +234,7 @@ public class Arm {
 
     public void initialMove(){
         this.shoulder.setPosition(RC_Shoulder.stowPos+150);
+        this.telescope.setPosition(0);
         this.claw.closeTop();
         this.claw.closeBottom();
     }
