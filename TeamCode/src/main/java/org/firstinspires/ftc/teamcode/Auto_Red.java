@@ -118,9 +118,6 @@ public class Auto_Red extends LinearOpMode{
         arm.initialMove();
         while (opModeIsActive()) {
             arm.updateEverything();
-            if (resetTimer.seconds() > 5){
-                arm.moveToStow();
-            }
         }
     }
 }

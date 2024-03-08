@@ -74,6 +74,7 @@ public class Shoulder {
             power = 0;
         }
         this.motor.setPower(power);
+        TelemetryData.shoulder_power = power;
         TelemetryData.shoulder_target = this.motor.getCurrentPosition();
         TelemetryData.shoulder_position = TelemetryData.shoulder_target;
         return power;
