@@ -206,7 +206,11 @@ public class Arm {
         } else if (TelemetryData.liftStage == 1) {
             //move telescope up to above bar
             if (TelemetryData.telescope_position < RC_Telescope.prepForLift) {
-                this.shoulder.update();
+                if (TelemetryData.shoulder_position < 1400) {
+                    this.shoulder.moveManual(-input);
+                } else {
+                    this.shoulder.moveManual(0);
+                }
                 this.telescope.manualMove(-input);
                 this.telescope.getCurrent();
                 if (TelemetryData.telescope_current > 600) {

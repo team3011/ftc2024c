@@ -118,6 +118,7 @@ public class Auto_Red extends LinearOpMode{
 
         arm.initialMove();
         while (opModeIsActive()) {
+            //updated
             arm.updateEverything();
             telemetry.addData("telescope target", TelemetryData.telescope_target);
             telemetry.addData("shoulder target", TelemetryData.shoulder_target);
