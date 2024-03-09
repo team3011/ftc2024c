@@ -78,7 +78,7 @@ public class Shoulder {
             this.motor.setPower(power);
             TelemetryData.shoulder_power = power;
 
-            if (TelemetryData.whatHeadingDo < -1.20 || TelemetryData.whatHeadingDo > 4.5) {
+            if (TelemetryData.whatHeadingDo < -4.4 || TelemetryData.whatHeadingDo > 1.5) {
                 RC_Shoulder.dropOffPosRev = TelemetryData.shoulder_position;
             }
         } else {

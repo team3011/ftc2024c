@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.kauailabs.navx.ftc.AHRS;
 import com.qualcomm.hardware.kauailabs.NavxMicroNavigationSensor;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -20,6 +21,8 @@ import org.firstinspires.ftc.teamcode.Subsystems.Shoulder;
 import org.firstinspires.ftc.teamcode.Subsystems.Telescope;
 import org.firstinspires.ftc.teamcode.Subsystems.Wrist;
 
+import java.text.DecimalFormat;
+
 
 @Autonomous(name = "SubSystem_Test")
 public class SubSystem_Test extends LinearOpMode {
@@ -32,7 +35,7 @@ public class SubSystem_Test extends LinearOpMode {
         FtcDashboard dashboard = FtcDashboard.getInstance();
         telemetry = dashboard.getTelemetry();
 
-        NavxMicroNavigationSensor navx = hardwareMap.get(NavxMicroNavigationSensor.class, "navx");
+        AHRS navx = AHRS.getInstance(hardwareMap.get(NavxMicroNavigationSensor.class, "navx"), AHRS.DeviceDataType.kProcessedData);
         Launcher launcher = new Launcher(
                 hardwareMap.get(Servo.class,"airplane"));
         Shoulder shoulder = new Shoulder(
@@ -65,6 +68,14 @@ public class SubSystem_Test extends LinearOpMode {
 
         Arm arm = new Arm(shoulder, telescope, claw, lift, wrist, navx, blinkin, fromAuto, isRed);
 
+        boolean connected = navx.isConnected();
+        telemetry.addData("1 navX-Device", connected ?
+                "Connected" : "Disconnected" );
+        String gyrocal, magcal, yaw, pitch, roll, compass_heading;
+        String fused_heading, ypr, cf, motion;
+        DecimalFormat df = new DecimalFormat("#.##");
+
+
 
         double left_y = gamepad1.left_stick_y;
         double right_y = gamepad1.right_stick_y;
@@ -77,6 +88,41 @@ public class SubSystem_Test extends LinearOpMode {
             left_x = zeroAnalogInput(gamepad1.left_stick_x);
             right_x = zeroAnalogInput(gamepad1.right_stick_x);
 
+
+            if ( connected ) {
+                gyrocal = (navx.isCalibrating() ?
+                        "CALIBRATING" : "Calibration Complete");
+                magcal = (navx.isMagnetometerCalibrated() ?
+                        "Calibrated" : "UNCALIBRATED");
+                yaw = df.format(navx.getYaw());
+                pitch = df.format(navx.getPitch());
+                roll = df.format(navx.getRoll());
+                ypr = yaw + ", " + pitch + ", " + roll;
+                compass_heading = df.format(navx.getCompassHeading());
+                fused_heading = df.format(navx.getFusedHeading());
+                if (!navx.isMagnetometerCalibrated()) {
+                    compass_heading = "-------";
+                }
+                cf = compass_heading + ", " + fused_heading;
+                if ( navx.isMagneticDisturbance()) {
+                    cf += " (Mag. Disturbance)";
+                }
+                motion = (navx.isMoving() ? "Moving" : "Not Moving");
+                if ( navx.isRotating() ) {
+                    motion += ", Rotating";
+                }
+            } else {
+                gyrocal =
+                        magcal =
+                                ypr =
+                                        cf =
+                                                motion = "-------";
+            }
+            telemetry.addData("2 GyroAccel", gyrocal );
+            telemetry.addData("3 Y,P,R", ypr);
+            telemetry.addData("4 Magnetometer", magcal );
+            telemetry.addData("5 Compass,9Axis", cf );
+            telemetry.addData("6 Motion", motion);
             //launcher.launchIt();
             //shoulder.update();
             //telescope.manualMove(left_y);

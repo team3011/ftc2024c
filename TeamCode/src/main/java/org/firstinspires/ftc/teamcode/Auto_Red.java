@@ -3,9 +3,11 @@ package org.firstinspires.ftc.teamcode;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.qualcomm.hardware.kauailabs.NavxMicroNavigationSensor;
+import com.kauailabs.navx.ftc.AHRS;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.AccelerationSensor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IntegratingGyroscope;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -18,6 +20,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.teamcode.RobotConstants.RC_AutoRed;
 import org.firstinspires.ftc.teamcode.RobotConstants.RC_Drive;
 import org.firstinspires.ftc.teamcode.RobotConstants.TelemetryData;
 import org.firstinspires.ftc.teamcode.Subsystems.Arm;
@@ -45,8 +48,7 @@ public class Auto_Red extends LinearOpMode{
         FtcDashboard dashboard = FtcDashboard.getInstance();
         telemetry = dashboard.getTelemetry();
         GamepadEx myGamePad = new GamepadEx(gamepad1);
-        NavxMicroNavigationSensor navx = hardwareMap.get(NavxMicroNavigationSensor.class, "navx");
-        IntegratingGyroscope gyro = (IntegratingGyroscope) navx;
+        AHRS navx = AHRS.getInstance(hardwareMap.get(NavxMicroNavigationSensor.class, "navx"), AHRS.DeviceDataType.kProcessedData);
         Launcher launcher = new Launcher(
                 hardwareMap.get(Servo.class, "airplane"));
         Shoulder shoulder = new Shoulder(
@@ -104,12 +106,18 @@ public class Auto_Red extends LinearOpMode{
 
         ring.setPower(0);
 
+        telemetry.addData("yaw", TelemetryData.yaw);
+        telemetry.addData("x distance", driveTrain.getXDistance());
+        telemetry.addData("y distance", driveTrain.getYDistance());
+        telemetry.addData("x power", TelemetryData.xPower);
+        telemetry.addData("y power", TelemetryData.yPower);
+        telemetry.update();
         waitForStart();
 
         boolean shoulderWasMoving = false;
         boolean lifting = false;
         boolean autoRun = false;
-        int autoRunStage = 0;
+
         int cameraDetect = 0;
         int step = 0;
         int half = 0;
@@ -122,16 +130,134 @@ public class Auto_Red extends LinearOpMode{
 
         ElapsedTime resetTimer = new ElapsedTime();
         boolean startTimer = false;
-
         arm.initialMove();
-        Orientation angles = gyro.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-        double yaw = Math.round(angles.firstAngle * 10) / 10.0;
+
+        int castle = 0;
+        int autoRunStage = 0;
+        boolean armCommand = false;
         while (opModeIsActive()) {
-            angles = gyro.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            yaw = Math.round(angles.firstAngle * 10) / 10.0;
-            //updated
+            double curX = driveTrain.getXDistance();
+            double curY = driveTrain.getYDistance();
+            if (autoRunStage == 0) {
+                //get away from the wall and the truss
+                driveTrain.drive(-.4,-.2,0, true);
+                //when far enough away, spin
+                if (curX < -50 && curY < -50) {
+                    driveTrain.setHeadingToMaintain(-1.57);
+                }
+                //move on if we have turned more than 80 degrees
+                if (TelemetryData.yaw < -80) {
+                    autoRunStage = 1;
+                }
+            } else if (autoRunStage == 1) {
+                //move to backboard and prep to drop off
+                if (!armCommand) {
+                    arm.moveToDropOff();
+                    armCommand = true;
+                    if (castle == 0) {
+                        driveTrain.setTarget(RC_AutoRed.x_center_board, RC_AutoRed.y_center_board);
+                    }
+                }
+                if (driveTrain.update(10,10, .3, .3)) {
+                    driveTrain.drive(0,0,0,true);
+                    autoRunStage = 2;
+                    armCommand = false;
+                    resetTimer.reset();
+                }
+            } else if (autoRunStage == 2 && resetTimer.seconds() > 2) {
+                //move arm down before we move
+                if (!armCommand) {
+                    arm.moveToStow(1);
+                    armCommand = true;
+                }
+                if (TelemetryData.shoulder_position < 500){
+                    autoRunStage = 3;
+                    armCommand = false;
+                }
+            } else if (autoRunStage == 3) {
+                //move to the spike
+                if (!armCommand) {
+                    if (castle == 0) {
+                        driveTrain.setTarget(RC_AutoRed.x_center_spike, RC_AutoRed.y_center_spike);
+                    }
+                    arm.moveToPickup(true);
+                    armCommand = true;
+                }
+                if (driveTrain.update(10,10, .3, .3)) {
+                    autoRunStage = 4;
+                    armCommand = false;
+                    resetTimer.reset();
+                }
+            } else if (autoRunStage == 4) {
+                //move to the center
+                if (!armCommand) {
+                    arm.moveToStow(0);
+                    armCommand = true;
+                }
+                if (resetTimer.seconds() > 2) {
+                    driveTrain.drive(0, -.4, 0, true);
+                }
+                if (driveTrain.getXDistance() < -1300) {
+                    //driveTrain.drive(0,0,0, true);
+                    autoRunStage = 5;
+                    armCommand = false;
+                }
+            } else if (autoRunStage == 5) {
+                //move to the stack
+                if (!armCommand) {
+                    driveTrain.setTarget(RC_AutoRed.x_stack, RC_AutoRed.y_stack);
+                    armCommand = true;
+                }
+                if (driveTrain.getYDistance() < -200){
+                    arm.prepStackAttack();
+                }
+                if (driveTrain.update(10, 10, .3, .3)) {
+                    autoRunStage = 6;
+                    armCommand = false;
+                    driveTrain.drive(0,0,0, true);
+                    arm.stackAttack();
+                    resetTimer.reset();
+                }
+            } else if (autoRunStage == 6 && resetTimer.seconds() > 2) {
+                //driveTrain.setToCoast();
+                if (!armCommand) {
+                    arm.moveToStow(2);
+                    driveTrain.setTarget(RC_AutoRed.x_safe, RC_AutoRed.y_safe);
+                    armCommand = true;
+                }
+                if (driveTrain.update(10, 10, .3, .3)) {
+                    autoRunStage = 7;
+                    armCommand = false;
+                }
+            } else if (autoRunStage == 7) {
+                if (!armCommand) {
+                    arm.moveToDropOff();
+                    driveTrain.setTarget(RC_AutoRed.x_center_board, RC_AutoRed.y_center_board-10);
+                    armCommand = true;
+                }
+                if (driveTrain.update(10, 10, .3, .3)) {
+                    driveTrain.drive(0,0,0, true);
+                    autoRunStage = 8;
+                    armCommand = false;
+                    resetTimer.reset();
+                }
+            } else if (autoRunStage == 8) {
+                if (!armCommand && resetTimer.seconds()>2) {
+                    arm.moveToStow(2);
+                    armCommand = true;
+                    autoRunStage = 9;
+                }
+            }
+
             arm.updateEverything();
-            telemetry.addData("yaw", yaw);
+            telemetry.addData("wrist pos", TelemetryData.wrist_position);
+            telemetry.addData("collision detected", TelemetryData.collisionDetected);
+            telemetry.addData("yaw", TelemetryData.yaw);
+            telemetry.addData("x distance", driveTrain.getXDistance());
+            telemetry.addData("y distance", driveTrain.getYDistance());
+            telemetry.addData("x power", TelemetryData.xPower);
+            telemetry.addData("y power", TelemetryData.yPower);
+            telemetry.addData("autoRunStage", autoRunStage);
             telemetry.addData("telescope target", TelemetryData.telescope_target);
             telemetry.addData("shoulder target", TelemetryData.shoulder_target);
             telemetry.addData("telescope position", TelemetryData.telescope_position);
@@ -139,8 +265,8 @@ public class Auto_Red extends LinearOpMode{
             telemetry.addData("shoulder position", TelemetryData.shoulder_position);
             telemetry.addData("shoulder power", TelemetryData.shoulder_power);
             telemetry.update();
-            RC_Drive.yaw_from_auto = yaw;
+
         }
-        RC_Drive.yaw_from_auto = yaw;
+        RC_Drive.yaw_from_auto = TelemetryData.yaw;
     }
 }

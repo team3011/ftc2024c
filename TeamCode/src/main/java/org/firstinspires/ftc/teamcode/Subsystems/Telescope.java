@@ -60,7 +60,7 @@ public class Telescope {
             this.manualEngaged = true;
             TelemetryData.telescope_position = this.motor.getCurrentPosition();
             TelemetryData.telescope_target = TelemetryData.telescope_position;
-            if (TelemetryData.whatHeadingDo < -1.20 || TelemetryData.whatHeadingDo > 4.5) {
+            if (TelemetryData.whatHeadingDo < -4.4 || TelemetryData.whatHeadingDo > 1.5) {
                 RC_Telescope.dropOffHighRev = TelemetryData.telescope_position;
             } else {
                 RC_Telescope.dropOffHigh = TelemetryData.telescope_position;

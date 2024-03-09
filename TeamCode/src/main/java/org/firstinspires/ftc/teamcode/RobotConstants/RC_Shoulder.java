@@ -11,7 +11,7 @@ public class RC_Shoulder {
     public static double velMultiplier = 1.25;
     public static final double ticksFor90 = 14.71;        // 1324 / 90
     public static final double startAngle = -16.8;
-    public static int dropOffPos = 2100;
+    public static int dropOffPos = 2200;
     public static int dropOffPosRev = 500;
     public static final int stowPos = 0;
     public static final int pickupPos = 0;

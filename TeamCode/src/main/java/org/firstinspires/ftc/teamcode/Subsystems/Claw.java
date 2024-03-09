@@ -17,7 +17,7 @@ public class Claw {
         this.sensor = s;
     }
     public void openBottom(){
-        if (TelemetryData.whatHeadingDo < -1.20 || TelemetryData.whatHeadingDo > 4.5) {
+        if (TelemetryData.whatHeadingDo < -4.4 || TelemetryData.whatHeadingDo > 1.5) {
             this.left.setPosition(RC_Claw.openBottomRev);
         } else {
             this.left.setPosition(RC_Claw.openBottom);
@@ -29,7 +29,7 @@ public class Claw {
     }
 
     public void openTop(){
-        if (TelemetryData.whatHeadingDo < -1.20 || TelemetryData.whatHeadingDo > 4.5) {
+        if (TelemetryData.whatHeadingDo < -4.4 || TelemetryData.whatHeadingDo > 1.5) {
             this.right.setPosition(RC_Claw.openTopRev);
         } else {
             this.right.setPosition(RC_Claw.openTop);

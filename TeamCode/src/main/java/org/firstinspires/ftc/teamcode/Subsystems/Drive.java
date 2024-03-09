@@ -1,6 +1,11 @@
 package org.firstinspires.ftc.teamcode.Subsystems;
 
+import static org.firstinspires.ftc.teamcode.RobotConstants.RC_Drive.last_world_linear_accel_x;
+
+import com.arcrobotics.ftclib.controller.PIDController;
 import com.arcrobotics.ftclib.controller.PIDFController;
+import com.kauailabs.navx.ftc.AHRS;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.hardware.kauailabs.NavxMicroNavigationSensor;
 import com.qualcomm.robotcore.hardware.IntegratingGyroscope;
@@ -11,6 +16,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.teamcode.RobotConstants.RC_Drive;
+import org.firstinspires.ftc.teamcode.RobotConstants.RC_Shoulder;
 import org.firstinspires.ftc.teamcode.RobotConstants.TelemetryData;
 
 import java.util.Locale;
@@ -20,11 +26,16 @@ public class Drive {
     private DcMotorEx frontRight;
     private DcMotorEx backLeft;
     private DcMotorEx backRight;
-    NavxMicroNavigationSensor navX;
-    IntegratingGyroscope gyro;
+    //NavxMicroNavigationSensor navX;
+    //IntegratingGyroscope gyro;
+    AHRS navX;
     private double headingToMaintain = 0;
+    PIDController x_controller;
+    PIDController y_controller;
+    double x_lastPIDCalc = 0.01;
+    double y_lastPIDCalc = 0.01;
 
-    public Drive(DcMotorEx fL, DcMotorEx fR, DcMotorEx bL, DcMotorEx bR, NavxMicroNavigationSensor n, boolean fromAuto) {
+    public Drive(DcMotorEx fL, DcMotorEx fR, DcMotorEx bL, DcMotorEx bR, AHRS n, boolean fromAuto) {
         this.frontLeft = fL;
         this.frontRight = fR;
         this.backLeft = bL;
@@ -36,9 +47,11 @@ public class Drive {
         this.backRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         this.frontLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
         this.backLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
-        this.gyro = (IntegratingGyroscope) this.navX;
 
+        TelemetryData.collisionDetected = false;
         if (fromAuto) {
+            this.x_controller = new PIDController(RC_Drive.x_kP, RC_Drive.x_kI, RC_Drive.x_kD);
+            this.y_controller = new PIDController(RC_Drive.y_kP, RC_Drive.y_kI, RC_Drive.y_kD);
             this.backLeft.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
             this.backRight.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         } else {
@@ -48,6 +61,13 @@ public class Drive {
         this.backRight.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
         this.frontLeft.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
         this.frontRight.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    public void setToCoast(){
+        this.frontRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
+        this.backRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
+        this.frontLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
+        this.backLeft.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
     }
 
     /**
@@ -90,15 +110,29 @@ public class Drive {
      * @param leftStickY commands robot forward and backward movements
      * @param rightStickX commands robot's rotation
      */
-    public void drive(double leftStickX, double leftStickY, double rightStickX) {
+    public void drive(double leftStickX, double leftStickY, double rightStickX, boolean fromAuto) {
         double x = leftStickX;
         double y = leftStickY; // Counteract imperfect strafing
         double rx = rightStickX * RC_Drive.rotation_multi; //what way we want to rotate
 
-        Orientation angles = this.gyro.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-
-        TelemetryData.yaw = Math.round(angles.firstAngle * 10) / 10.0 + RC_Drive.yaw_from_auto;
+        if (fromAuto) {
+            TelemetryData.yaw = Math.round(this.navX.getYaw() * 10) / 10.0;
+        } else {
+            TelemetryData.yaw = Math.round(this.navX.getYaw() * 10) / 10.0 - 90;
+        }
         double robotHeading = Math.toRadians(TelemetryData.yaw);
+
+        double curr_world_linear_accel_x = this.navX.getWorldLinearAccelX();
+        double currentJerkX = curr_world_linear_accel_x - RC_Drive.last_world_linear_accel_x;
+        RC_Drive.last_world_linear_accel_x = curr_world_linear_accel_x;
+        double curr_world_linear_accel_y = this.navX.getWorldLinearAccelY();
+        double currentJerkY = curr_world_linear_accel_y - RC_Drive.last_world_linear_accel_y;
+        RC_Drive.last_world_linear_accel_y = curr_world_linear_accel_y;
+
+        if ( ( Math.abs(currentJerkX) > 0.5 ) ||
+                ( Math.abs(currentJerkY) > 0.5) ) {
+            TelemetryData.collisionDetected = true;
+        }
 
         if(rx == 0){ //this means that we're trying to maintain our current heading
             double shorter = this.figureOutWhatIsShorter(robotHeading);
@@ -113,17 +147,14 @@ public class Drive {
             }
 
             TelemetryData.whatHeadingDo = headingToMaintain;
-                    //String.format(Locale.getDefault(),"Maintaining Desired Heading of %.2f",
-                    //        headingToMaintain);
         }else{
-            //TelemetryData.whatHeadingDo = "Turning";
             //we're going to maintain our new heading once we've stopped turning.
             //not before we've turned
             this.headingToMaintain = robotHeading;
         }
         //triangle """magic"""
-        double rotX = x * Math.cos(-robotHeading) - y * Math.sin(-robotHeading);
-        double rotY = x * Math.sin(-robotHeading) + y * Math.cos(-robotHeading);
+        double rotX = x * Math.cos(robotHeading) - y * Math.sin(robotHeading);
+        double rotY = x * Math.sin(robotHeading) + y * Math.cos(robotHeading);
 
         // Denominator is the largest motor power (absolute value) or 1
         // This ensures all the powers maintain the same ratio, but only when
@@ -165,7 +196,7 @@ public class Drive {
         } else {
             result = this.headingToMaintain - reading;
         }
-        return result;
+        return -result * RC_Drive.autoRotation_multi;
     }
 
     /** changes our current turning speed to a turning speed that allows us to rotate
@@ -191,4 +222,106 @@ public class Drive {
      * @param input in radians
      */
     public void setHeadingToMaintain(double input){ this.headingToMaintain = input; }
+
+    public void setTarget(int mmX, int mmY){
+        TelemetryData.xTarget = mmX;
+        TelemetryData.yTarget = mmY;
+    }
+
+    public int getXDistance(){
+        return convertToMM(this.backLeft.getCurrentPosition());
+    }
+
+    public int getYDistance(){
+        return convertToMM(this.backRight.getCurrentPosition());
+    }
+
+    public boolean update(int xTol, int yTol, double xMax, double yMax){
+        this.x_controller.setPID(RC_Drive.x_kP, RC_Drive.x_kI, RC_Drive.x_kD);
+        this.y_controller.setPID(RC_Drive.y_kP, RC_Drive.y_kI, RC_Drive.y_kD);
+        double x_power = limiter(calcXPower(),xMax) * 1.3;
+        double y_power = limiter(calcYPower(),yMax)  * 1.3;
+        TelemetryData.xPower = x_power;
+        TelemetryData.yPower = y_power;
+        drive(-y_power, x_power, 0, true);
+        return Math.abs(x_power) < .1 && Math.abs(y_power) < .1;
+    }
+
+    private double limiter(double input, double lim) {
+        //this will limit the pid to a range of -1 to 1
+        if (input > lim) {
+            input = lim;
+        } else if (input < -lim) {
+            input = -lim;
+        }
+        return input;
+    }
+    private double calcXPower(){
+        double power = 0;
+        double pid = this.x_controller.calculate(getXDistance(), TelemetryData.xTarget);
+
+        pid = limiter(pid / 10,1);
+        return pid;
+        /*
+        //***********************************************
+        //this section reduces the acceleration by reducing how fast the pid calculation can change
+        if (this.x_lastPIDCalc > 0) {
+            if (pid > 0) {
+                if (pid - this.x_lastPIDCalc > .2) {
+                    pid = this.x_lastPIDCalc * RC_Drive.x_velMultiplier;
+                }
+            } else {
+                pid = -0.01;
+            }
+        } else {
+            if (pid < 0) {
+                if (pid - this.x_lastPIDCalc < -0.2) {
+                    pid = this.x_lastPIDCalc * RC_Drive.x_velMultiplier;
+                }
+
+            } else {
+                pid = 0.01;
+            }
+        }
+        this.x_lastPIDCalc = pid;
+        //**********************************************
+        pid = limiter(pid / 10);
+        return power;
+
+         */
+    }
+    private double calcYPower(){
+        double power = 0;
+        double pid = this.y_controller.calculate(getYDistance(), TelemetryData.yTarget);
+        pid = limiter(pid / 10,1);
+        return pid;
+        /*
+
+        //***********************************************
+        //this section reduces the acceleration by reducing how fast the pid calculation can change
+        if (this.y_lastPIDCalc > 0) {
+            if (pid > 0) {
+                if (pid - this.y_lastPIDCalc > .2) {
+                    pid = this.y_lastPIDCalc * RC_Drive.y_velMultiplier;
+                }
+            } else {
+                pid = -0.01;
+            }
+        } else {
+            if (pid < 0) {
+                if (pid - this.y_lastPIDCalc < -0.2) {
+                    pid = this.y_lastPIDCalc * RC_Drive.x_velMultiplier;
+                }
+
+            } else {
+                pid = 0.01;
+            }
+        }
+        this.x_lastPIDCalc = pid;
+        //**********************************************
+        pid = limiter(pid / 10);
+        return power;
+
+         */
+    }
 }

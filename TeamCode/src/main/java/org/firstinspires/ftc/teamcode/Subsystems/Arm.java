@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.Subsystems;
 
+import com.kauailabs.navx.ftc.AHRS;
 import com.qualcomm.hardware.kauailabs.NavxMicroNavigationSensor;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.hardware.IntegratingGyroscope;
@@ -21,8 +22,7 @@ public class Arm {
     private Claw claw;
     private Lift lift;
     private Wrist wrist;
-    private NavxMicroNavigationSensor navx;
-    private IntegratingGyroscope gyro;
+    private AHRS navx;
     private RevBlinkinLedDriver blinkin;
     private RevBlinkinLedDriver.BlinkinPattern mainColor;
     private RevBlinkinLedDriver.BlinkinPattern violet = RevBlinkinLedDriver.BlinkinPattern.VIOLET;
@@ -30,14 +30,13 @@ public class Arm {
     private boolean autoPickup = false;
     private ElapsedTime colorTimer = new ElapsedTime();
 
-    public Arm(Shoulder s, Telescope t, Claw c, Lift l, Wrist w, NavxMicroNavigationSensor n, RevBlinkinLedDriver b, boolean fromAuto, boolean isRed){
+    public Arm(Shoulder s, Telescope t, Claw c, Lift l, Wrist w, AHRS n, RevBlinkinLedDriver b, boolean fromAuto, boolean isRed){
         this.shoulder = s;
         this.telescope = t;
         this.claw = c;
         this.lift = l;
         this.wrist = w;
         this.navx = n;
-        this.gyro = (IntegratingGyroscope)this.navx;
         this.blinkin = b;
         if (isRed){
             this.mainColor = RevBlinkinLedDriver.BlinkinPattern.BREATH_RED;
@@ -53,9 +52,10 @@ public class Arm {
     }
 
     public double getPitch(){
-        Orientation angles = this.gyro.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-        double robotPitch = Math.toRadians(angles.secondAngle);
-        return robotPitch;
+        //Orientation angles = this.gyro.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        //double robotPitch = Math.toRadians(angles.secondAngle);
+        //return robotPitch;
+        return 0;
     }
 
     public void lifting(double input){
@@ -90,7 +90,7 @@ public class Arm {
     public void manualMoveA(double input){
         this.shoulder.moveManual(input*.5);
         if (input != 0) {
-            if (TelemetryData.whatHeadingDo < -1.20 || TelemetryData.whatHeadingDo > 4.5) {
+            if (TelemetryData.whatHeadingDo < -4.4 || TelemetryData.whatHeadingDo > 1.5) {
                 double revWrist = 0.2;
                 if (TelemetryData.shoulder_position > 500) {
                     revWrist = revWrist - (TelemetryData.shoulder_position - 500) / 3000.0;
@@ -100,7 +100,6 @@ public class Arm {
                 } else if (revWrist < 0.07) {
                     revWrist = 0.07;
                 }
-                TelemetryData.revWrist = revWrist;
                 RC_Wrist.dropOffPosRev = revWrist;
                 this.wrist.setPosition(revWrist);
 
@@ -114,42 +113,84 @@ public class Arm {
             }
         }
     }
-    public void moveToPickup(){
+    public void moveToPickup(boolean dropping){
         if (this.state != 1) {
-            this.shoulder.setPosition(RC_Shoulder.pickupPos);
-            TelemetryData.shoulder_target = RC_Shoulder.pickupPos;
+            if (!dropping) {
+                this.claw.openBottom();
+                this.claw.openTop();
+                this.autoPickup = true;
+                this.shoulder.setPosition(RC_Shoulder.pickupPos);
+                TelemetryData.shoulder_target = RC_Shoulder.pickupPos;
+            } else {
+                this.shoulder.setPosition(RC_Shoulder.pickupPos + 250);
+                TelemetryData.shoulder_target = RC_Shoulder.pickupPos + 250;
+            }
+
             this.wrist.setTarget(RC_Wrist.pickupPos, RC_Wrist.pickupTime);
             this.telescope.setPosition(RC_Telescope.pickupPos);
-            this.claw.openBottom();
-            this.claw.openTop();
             this.state = -1;
-            this.autoPickup = true;
         }
     }
 
-    public void moveToStow() throws InterruptedException {
-        if (this.state == -1) {
-            this.claw.closeBottom();
-            Thread.sleep(RC_Claw.pickupPause);
-            this.claw.closeTop();
-            Thread.sleep(RC_Claw.pickupPause);
-        }
-        if (this.state == 1) {
-            this.claw.partialBottom();
-            Thread.sleep(RC_Claw.dropBottomPause);
-            this.claw.partialTop();
-            Thread.sleep(RC_Claw.dropTopPause);
-        }
+    public void prepStackAttack(){
+        this.claw.openBottom();
+        this.claw.openTop();
+        this.autoPickup = true;
+        this.shoulder.setPosition(RC_Shoulder.pickupPos + 250);
+        TelemetryData.shoulder_target = RC_Shoulder.pickupPos + 250;
+        this.wrist.setTarget(RC_Wrist.pickupPos, RC_Wrist.pickupTime);
+        this.telescope.setPosition(RC_Telescope.pickupPos);
+        this.state = -1;
+    }
 
+    public void stackAttack(){
+        this.autoPickup = true;
+        this.shoulder.setPosition(RC_Shoulder.pickupPos);
+        TelemetryData.shoulder_target = RC_Shoulder.pickupPos;
+    }
+
+    /**
+     *
+     * @param p pixels to drop
+     * @throws InterruptedException
+     */
+    public void moveToStow(int p) throws InterruptedException {
+        if (p == 2) {
+            if (this.state == -1) {
+                this.claw.closeBottom();
+                Thread.sleep(RC_Claw.pickupPause);
+                this.claw.closeTop();
+                Thread.sleep(RC_Claw.pickupPause);
+                this.shoulder.setPosition(RC_Shoulder.stowPos);
+            }
+            if (this.state == 1) {
+                this.claw.partialBottom();
+                Thread.sleep(RC_Claw.dropBottomPause);
+                this.claw.partialTop();
+                Thread.sleep(RC_Claw.dropTopPause);
+                this.shoulder.setPosition(RC_Shoulder.stowPos);
+            }
+        } else if (p == 1){
+            if (this.state == 1) {
+                this.claw.partialBottom();
+                Thread.sleep(RC_Claw.dropBottomPause);
+                this.shoulder.setPosition(RC_Shoulder.stowPos + 150);
+            }
+        } else if (p == 0){
+            this.claw.openBottom();
+            this.claw.openTop();
+            Thread.sleep(RC_Claw.dropBottomPause);
+            this.shoulder.setPosition(RC_Shoulder.stowPos);
+            this.wrist.setTarget(RC_Wrist.stowPos,RC_Wrist.stowTime);
+        }
         this.telescope.setPosition(RC_Telescope.stowPos);
-        this.shoulder.setPosition(RC_Shoulder.stowPos);
         this.wrist.setTarget(RC_Wrist.stowPos,RC_Wrist.stowTime);
         this.state = 0;
     }
 
     public void moveToDropOff(){
         if (this.state != -1) {
-            if (TelemetryData.whatHeadingDo < -1.20 || TelemetryData.whatHeadingDo > 4.5) {
+            if (TelemetryData.whatHeadingDo < -4.4 || TelemetryData.whatHeadingDo > 1.5) {
                 //we are facing the board
                 this.shoulder.setPosition(RC_Shoulder.dropOffPosRev);
                 this.telescope.setPosition(RC_Telescope.dropOffHighRev);
@@ -166,14 +207,14 @@ public class Arm {
 
     public void updateEverything() throws InterruptedException {
         if (this.state == 0 && Math.abs(TelemetryData.telescope_target - TelemetryData.telescope_position) > 50 &&
-                (TelemetryData.whatHeadingDo < -1.20 || TelemetryData.whatHeadingDo > 4.5)) {
+                (TelemetryData.whatHeadingDo < -4.4 || TelemetryData.whatHeadingDo > 1.5)) {
             //we need to move the telescope first
             this.telescope.update();
         } else {
             this.wrist.update();
             this.shoulder.update();
             if (this.autoPickup && this.claw.getClawSensor()) {
-                moveToStow();
+                moveToStow(2);
                 this.autoPickup = false;
                 this.blinkin.setPattern(this.violet);
                 this.colorTimer.reset();

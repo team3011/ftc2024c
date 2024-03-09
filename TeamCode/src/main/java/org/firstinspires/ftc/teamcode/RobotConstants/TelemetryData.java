@@ -19,5 +19,9 @@ public class TelemetryData {
     public static int liftStage = -3;
     public static double telescope_current;
     public static double shoulder_current;
-    public static double revWrist = 0;
+    public static int xTarget;
+    public static int yTarget;
+    public static double xPower;
+    public static double yPower;
+    public static boolean collisionDetected;
 }

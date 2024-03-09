@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
 import com.arcrobotics.ftclib.gamepad.GamepadKeys;
+import com.kauailabs.navx.ftc.AHRS;
 import com.qualcomm.hardware.kauailabs.NavxMicroNavigationSensor;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -35,7 +36,7 @@ public class Tele_Red extends LinearOpMode {
         FtcDashboard dashboard = FtcDashboard.getInstance();
         telemetry = dashboard.getTelemetry();
         GamepadEx myGamePad = new GamepadEx(gamepad1);
-        NavxMicroNavigationSensor navx = hardwareMap.get(NavxMicroNavigationSensor.class, "navx");
+        AHRS navx = AHRS.getInstance(hardwareMap.get(NavxMicroNavigationSensor.class, "navx"), AHRS.DeviceDataType.kProcessedData);
         Launcher launcher = new Launcher(
                 hardwareMap.get(Servo.class,"airplane"));
         Shoulder shoulder = new Shoulder(
@@ -108,10 +109,10 @@ public class Tele_Red extends LinearOpMode {
             right_t = zeroAnalogInput(gamepad1.right_trigger);
 
             if (!myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER) && myGamePad.wasJustReleased(GamepadKeys.Button.A)) {
-                arm.moveToPickup();
+                arm.moveToPickup(false);
             }
             if (!myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER) && myGamePad.wasJustReleased(GamepadKeys.Button.X)) {
-                arm.moveToStow();
+                arm.moveToStow(2);
                 TelemetryData.liftStage = -3;
             }
             if (!myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER) && myGamePad.wasJustReleased(GamepadKeys.Button.Y)) {
@@ -121,13 +122,13 @@ public class Tele_Red extends LinearOpMode {
                 driveTrain.setHeadingToMaintain(0);
             }
             if (myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER) && myGamePad.isDown(GamepadKeys.Button.X)) {
-                driveTrain.setHeadingToMaintain(1.57);
+                driveTrain.setHeadingToMaintain(-1.57);
             }
             if (myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER) && myGamePad.isDown(GamepadKeys.Button.A)) {
                 driveTrain.setHeadingToMaintain(3.14);
             }
             if (myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER) && myGamePad.isDown(GamepadKeys.Button.B)) {
-                driveTrain.setHeadingToMaintain(-1.57);
+                driveTrain.setHeadingToMaintain(1.57);
             }
 
             if (left_t != 0) {
@@ -146,7 +147,7 @@ public class Tele_Red extends LinearOpMode {
                 arm.lifting(0);
             }
 
-            driveTrain.drive(RC_Drive.red_leftXInverse * left_x, RC_Drive.red_leftYInverse * left_y, RC_Drive.red_rightXInverse * right_x);
+            driveTrain.drive(RC_Drive.red_leftXInverse * left_x, RC_Drive.red_leftYInverse * left_y, RC_Drive.red_rightXInverse * right_x, false);
 
             if (!endGameStarted) {
                 if (!myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER)) {
@@ -157,9 +158,10 @@ public class Tele_Red extends LinearOpMode {
                 arm.updateEverything();
             }
 
+            telemetry.addData("x distance", driveTrain.getXDistance());
+            telemetry.addData("y distance", driveTrain.getYDistance());
             telemetry.addData("yaw", TelemetryData.yaw);
-            telemetry.addData("revWrist", TelemetryData.revWrist);
-            //telemetry.addData("yaw offset from auto", RC_Drive.yaw_from_auto);
+            telemetry.addData("yaw offset from auto", RC_Drive.yaw_from_auto);
             telemetry.addData("wrist position", TelemetryData.wrist_position);
             telemetry.addData("maintain heading of", TelemetryData.whatHeadingDo);
             telemetry.addData("telescope target", TelemetryData.telescope_target);
@@ -175,7 +177,7 @@ public class Tele_Red extends LinearOpMode {
 
         }
 
-        driveTrain.drive(0,0,0);
+        driveTrain.drive(0,0,0, false);
     }
 
     private double zeroAnalogInput(double input){
