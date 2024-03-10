@@ -20,6 +20,7 @@ public class Telescope {
     private double lastPIDCalc = .001;
     private int lastTarget = 0;
     private boolean manualEngaged = false;
+    private boolean justTouched = false;
 
     /**
      * Class constructor
@@ -39,6 +40,7 @@ public class Telescope {
         if (fromAuto) {
             if (!this.touch.isPressed()) {
                 this.resetStage = 1;
+                this.justTouched = true;
             } else {
                 TelemetryData.shoulder_position = 0;
                 this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -67,6 +69,7 @@ public class Telescope {
             }
             if (this.touch.isPressed() && input < 0) {
                 this.motor.setPower(0);
+                this.justTouched = true;
                 this.resetTriggered = true;
                 TelemetryData.telescope_power = 0;
                 TelemetryData.telescope_position = 0;
@@ -104,6 +107,7 @@ public class Telescope {
             TelemetryData.telescope_position = this.motor.getCurrentPosition();
             //our target is either 0 or not 0
             if (TelemetryData.telescope_target == 0) {
+                //target is 0, if we are far away set reset to true
                 if (TelemetryData.shoulder_target == 0 && TelemetryData.shoulder_position > 50) {
                     this.resetStage = 1;
                 }
@@ -112,15 +116,18 @@ public class Telescope {
                     power = 0.1;
                     this.resetTriggered = true;
                     this.resetStage = -1;
+                    this.justTouched = true;
 
                 } else {
                     if (this.resetStage == 1) {
+                        //heading towards sensor, slow down if close else full speed
                         if (TelemetryData.telescope_position > 500) {
                             power = calcPower();
                         } else {
                             power = -.2;
                         }
                     } else if (this.resetStage == -1) {
+                        //we just touched the sensor and this is the first time it was not touched, so set this point as 0
                         power = 0;
                         this.resetStage = 0;
                         TelemetryData.telescope_position = 0;
@@ -131,12 +138,13 @@ public class Telescope {
             } else {
                 this.resetTriggered = false;
                 this.resetStage = 1;
+                //this is in case of an emergency
                 if (this.touch.isPressed()) {
-                    power = 0.2;
+                    power = 0.3;
                 } else if (TelemetryData.shoulder_target == RC_Shoulder.dropOffPos) {
-                    if (this.touch.isPressed()) {
-                        power = 0.3;
-                    } else if (TelemetryData.shoulder_position > 1300 ) {
+                    //do NOT move the telescope until the shoulder is in position
+                    //there is too much rotational inertia and it will skip the shoulder
+                    if (TelemetryData.shoulder_position > 1300 ) {
                         power = calcPower();
                     } else {
                         power = 0;
