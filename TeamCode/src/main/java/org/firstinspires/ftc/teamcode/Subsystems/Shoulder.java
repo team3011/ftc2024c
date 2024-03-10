@@ -116,16 +116,16 @@ public class Shoulder {
                     power = calcPower();
                 }
             } else {
+                power = calcPower();
                 //limits the speed after straight up
                 if (power > 0 && TelemetryData.shoulder_position > 1300) {
                     if (power > 0.1) {
                         power = 0.1;
                     }
-                } else {
-                    power = calcPower();
+                } else if (TelemetryData.shoulder_position > 2300 && power > 0) {
+                    power = 0;
                 }
             }
-
             this.motor.setPower(power);
             TelemetryData.shoulder_power = power;
         }

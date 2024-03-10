@@ -2,24 +2,19 @@ package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
-import com.qualcomm.hardware.kauailabs.NavxMicroNavigationSensor;
 import com.kauailabs.navx.ftc.AHRS;
+import com.qualcomm.hardware.kauailabs.NavxMicroNavigationSensor;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.AccelerationSensor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.IntegratingGyroscope;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.teamcode.RobotConstants.RC_AutoBlue;
 import org.firstinspires.ftc.teamcode.RobotConstants.RC_AutoRed;
 import org.firstinspires.ftc.teamcode.RobotConstants.RC_Drive;
 import org.firstinspires.ftc.teamcode.RobotConstants.TelemetryData;
@@ -33,10 +28,10 @@ import org.firstinspires.ftc.teamcode.Subsystems.Shoulder;
 import org.firstinspires.ftc.teamcode.Subsystems.Telescope;
 import org.firstinspires.ftc.teamcode.Subsystems.Wrist;
 
-
 import java.util.List;
-@Autonomous(name = "AUTO_RED")
-public class Auto_Red extends LinearOpMode{
+
+@Autonomous(name = "AUTO_BLUE")
+public class Auto_Blue extends LinearOpMode{
 
 
     List<Recognition> currentRecognitions;
@@ -117,10 +112,10 @@ public class Auto_Red extends LinearOpMode{
             if(visionCam.returnRecogs().size() != 0) {
                 currentRecognitions = visionCam.returnRecogs();
                 Recognition recognition = currentRecognitions.get(0);
-                if (recognition.getBottom() > RC_AutoRed.cameraLine) {
+                if (recognition.getBottom() > RC_AutoBlue.cameraLine) {
                     castle = 0;
                     blinkin.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
-                } else if (recognition.getBottom() < RC_AutoRed.cameraLine) {
+                } else if (recognition.getBottom() < RC_AutoBlue.cameraLine) {
                     castle = 1;
                     blinkin.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
                 }

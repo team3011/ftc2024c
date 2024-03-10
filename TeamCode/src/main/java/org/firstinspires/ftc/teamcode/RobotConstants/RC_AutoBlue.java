@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode.RobotConstants;
 import com.acmerobotics.dashboard.config.Config;
 
 @Config
-public class RC_AutoRed {
+public class RC_AutoBlue {
     public static int x_center_board = -830;
     public static int y_center_board = 470;
     public static int x_center_spike = -1100;
@@ -12,5 +12,5 @@ public class RC_AutoRed {
     public static int y_stack = -2050;
     public static int x_safe = -1450;
     public static int y_safe = 40;
-    public static int cameraLine = 255;
+    public static int cameraLine = 280;
 }
