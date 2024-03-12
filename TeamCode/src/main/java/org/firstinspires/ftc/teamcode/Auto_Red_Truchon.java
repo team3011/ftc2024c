@@ -2,23 +2,17 @@ package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.arcrobotics.ftclib.gamepad.GamepadEx;
-import com.qualcomm.hardware.kauailabs.NavxMicroNavigationSensor;
 import com.kauailabs.navx.ftc.AHRS;
+import com.qualcomm.hardware.kauailabs.NavxMicroNavigationSensor;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.hardware.AccelerationSensor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.IntegratingGyroscope;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.teamcode.RobotConstants.RC_AutoRed;
 import org.firstinspires.ftc.teamcode.RobotConstants.RC_Drive;
@@ -34,10 +28,10 @@ import org.firstinspires.ftc.teamcode.Subsystems.Shoulder;
 import org.firstinspires.ftc.teamcode.Subsystems.Telescope;
 import org.firstinspires.ftc.teamcode.Subsystems.Wrist;
 
-
 import java.util.List;
-@Autonomous(name = "AUTO_RED")
-public class Auto_Red extends LinearOpMode{
+
+@Autonomous(name = "AUTO_RED_TRUCHON")
+public class Auto_Red_Truchon extends LinearOpMode{
 
 
     List<Recognition> currentRecognitions;
@@ -125,7 +119,6 @@ public class Auto_Red extends LinearOpMode{
                 Recognition recognition = currentRecognitions.get(0);
                 if (recognition.getBottom() > RC_AutoRed.cameraLine) {
                     castle = 0;
-
                     blinkin.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
                 } else if (recognition.getBottom() < RC_AutoRed.cameraLine) {
                     castle = 1;
@@ -150,7 +143,8 @@ public class Auto_Red extends LinearOpMode{
             board.setXY(0, 0);
         }
         if (castle == -1) {
-            board.setXY(0, 0);
+            board.setXY(RC_AutoRed.x_left_board, RC_AutoRed.y_left_board);
+            spike.setXY(RC_AutoRed.x_left_spike, RC_AutoRed.y_left_spike);
         }
 
         boolean shoulderWasMoving = false;
@@ -192,9 +186,7 @@ public class Auto_Red extends LinearOpMode{
                 if (!armCommand) {
                     arm.moveToDropOff();
                     armCommand = true;
-                    if (castle == 0) {
-                        driveTrain.setTarget(RC_AutoRed.x_center_board, RC_AutoRed.y_center_board);
-                    }
+                    driveTrain.setTarget(board.returnX(), board.returnY());
                 }
                 if (driveTrain.update(10,10, .3, .3)) {
                     driveTrain.drive(0,0,0,true);
@@ -215,9 +207,7 @@ public class Auto_Red extends LinearOpMode{
             } else if (autoRunStage == 3) {
                 //move to the spike
                 if (!armCommand) {
-                    if (castle == 0) {
-                        driveTrain.setTarget(RC_AutoRed.x_center_spike, RC_AutoRed.y_center_spike);
-                    }
+                    driveTrain.setTarget(spike.returnX(), spike.returnY());
                     arm.moveToPickup(true);
                     armCommand = true;
                 }
