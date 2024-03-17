@@ -64,6 +64,7 @@ public class SubSystem_Test extends LinearOpMode {
                 hardwareMap.get(DcMotorEx.class, "backLeft"),
                 hardwareMap.get(DcMotorEx.class, "backRight"),
                 navx,
+                true,
                 true);
 
         Arm arm = new Arm(shoulder, telescope, claw, lift, wrist, navx, blinkin, fromAuto, isRed);

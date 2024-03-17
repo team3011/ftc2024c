@@ -34,8 +34,9 @@ public class Drive {
     PIDController y_controller;
     double x_lastPIDCalc = 0.01;
     double y_lastPIDCalc = 0.01;
+    int lastY = 0;
 
-    public Drive(DcMotorEx fL, DcMotorEx fR, DcMotorEx bL, DcMotorEx bR, AHRS n, boolean fromAuto) {
+    public Drive(DcMotorEx fL, DcMotorEx fR, DcMotorEx bL, DcMotorEx bR, AHRS n, boolean fromAuto, boolean isRed) {
         this.frontLeft = fL;
         this.frontRight = fR;
         this.backLeft = bL;
@@ -55,7 +56,11 @@ public class Drive {
             this.backLeft.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
             this.backRight.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
         } else {
-            setHeadingToMaintain(Math.toRadians(RC_Drive.yaw_from_auto));
+            if (isRed) {
+                setHeadingToMaintain(Math.toRadians(RC_Drive.yaw_from_auto));
+            } else {
+                setHeadingToMaintain(Math.toRadians(-RC_Drive.yaw_from_auto));
+            }
         }
         this.backLeft.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
         this.backRight.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
@@ -236,15 +241,85 @@ public class Drive {
         return convertToMM(this.backRight.getCurrentPosition());
     }
 
-    public boolean update(int xTol, int yTol, double xMax, double yMax){
+    public int returnXTarget() {
+        return TelemetryData.xTarget;
+    }
+    public int returnYTarget() {
+        return TelemetryData.yTarget;
+    }
+
+    public int getDiffX() { return Math.abs(getXDistance() - returnXTarget()); }
+    public int getDiffY() { return Math.abs(getYDistance() - returnYTarget()); }
+
+    public boolean update(int xTol, int yTol, double xMax, double yMax, int inverse){
         this.x_controller.setPID(RC_Drive.x_kP, RC_Drive.x_kI, RC_Drive.x_kD);
         this.y_controller.setPID(RC_Drive.y_kP, RC_Drive.y_kI, RC_Drive.y_kD);
         double x_power = limiter(calcXPower(),xMax) * 1.3;
-        double y_power = limiter(calcYPower(),yMax)  * 1.3;
+        double y_power = inverse * limiter(calcYPower(),yMax)  * 1.3;
         TelemetryData.xPower = x_power;
         TelemetryData.yPower = y_power;
         drive(-y_power, x_power, 0, true);
         return Math.abs(x_power) < .1 && Math.abs(y_power) < .1;
+    }
+
+    public boolean updateV2(int xTol, int yTol, double xMax, double yMax, int inverse) {
+        double x_power = 0;
+        double y_power = 0;
+        int curX = getXDistance();
+        int curY = getYDistance();
+
+
+        this.x_controller.setPID(RC_Drive.x_kP, RC_Drive.x_kI, RC_Drive.x_kD);
+        this.y_controller.setPID(RC_Drive.y_kP, RC_Drive.y_kI, RC_Drive.y_kD);
+        double x_power2 = Math.abs(limiter(calcXPower(),xMax)) + .1;
+        double y_power2 = Math.abs(limiter(calcYPower(),yMax)) + .1;
+
+        //double x_power2 = xMax;
+        //double y_power2 = yMax;
+        //TelemetryData.xPower = xMax;
+        //TelemetryData.yPower = yMax;
+
+        if (inverse == 1) {
+            //this is for red
+            if ( Math.abs(TelemetryData.xTarget - curX) > xTol) {
+                if (TelemetryData.xTarget > getXDistance()) {
+                    x_power = x_power2;
+                } else {
+                    x_power = -x_power2;
+                }
+            }
+            if (Math.abs(TelemetryData.yTarget - curY)  > yTol) {
+                if (TelemetryData.yTarget > getYDistance()) {
+                    y_power = -y_power2;
+                } else {
+                    y_power = y_power2;
+                }
+            }
+        } else {
+            //this is for blue
+            if ( Math.abs(TelemetryData.xTarget - curX) > xTol) {
+                if (TelemetryData.xTarget > getXDistance()) {
+                    x_power = -x_power2;
+                } else {
+                    x_power = x_power2;
+                }
+            }
+            if (Math.abs(TelemetryData.yTarget - curY)  > yTol) {
+                if (TelemetryData.yTarget > getYDistance()) {
+                    y_power = y_power2;
+                } else {
+                    y_power = -y_power2;
+                }
+            }
+        }
+        drive(y_power,x_power,0,true);
+        boolean exit = false;
+        if (Math.abs(getYDistance() - this.lastY)  < 5) {
+            exit = true;
+        } else {
+            this.lastY = getYDistance();
+        }
+        return (x_power == 0 && y_power == 0);
     }
 
     private double limiter(double input, double lim) {

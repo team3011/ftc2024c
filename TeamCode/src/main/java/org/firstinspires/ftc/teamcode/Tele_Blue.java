@@ -27,12 +27,12 @@ import org.firstinspires.ftc.teamcode.Subsystems.Wrist;
 
 // excellent resource on programming mecanum wheels
 // https://gm0.org/en/latest/docs/software/tutorials/mecanum-drive.html#field-centric-final-sample-code
-@TeleOp(name = "TELE_RED")
-public class Tele_Red extends LinearOpMode {
+@TeleOp(name = "TELE_BLUE")
+public class Tele_Blue extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         boolean fromAuto = false;
-        boolean isRed = true;
+        boolean isRed = false;
         FtcDashboard dashboard = FtcDashboard.getInstance();
         telemetry = dashboard.getTelemetry();
         GamepadEx myGamePad = new GamepadEx(gamepad1);
@@ -66,7 +66,7 @@ public class Tele_Red extends LinearOpMode {
                 hardwareMap.get(DcMotorEx.class, "backRight"),
                 navx,
                 fromAuto,
-                true);
+                false);
 
         Arm arm = new Arm(shoulder, telescope, claw, lift, wrist, navx, blinkin, fromAuto, isRed);
 
@@ -123,16 +123,16 @@ public class Tele_Red extends LinearOpMode {
                 driveTrain.setHeadingToMaintain(0);
             }
             if (myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER) && myGamePad.isDown(GamepadKeys.Button.X)) {
-                driveTrain.setHeadingToMaintain(-1.57);
+                driveTrain.setHeadingToMaintain(1.57);
             }
             if (myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER) && myGamePad.isDown(GamepadKeys.Button.A)) {
                 driveTrain.setHeadingToMaintain(3.14);
             }
             if (myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER) && myGamePad.isDown(GamepadKeys.Button.B)) {
-                driveTrain.setHeadingToMaintain(1.57);
+                driveTrain.setHeadingToMaintain(-1.57);
             }
 
-            if (left_t != 0 && TelemetryData.liftStage != 2) {
+            if (left_t != 0  && TelemetryData.liftStage != 2) {
                 endGameStarted = true;
                 shoulderWasMoving = true;
                 arm.prepForLift(left_t);
@@ -158,25 +158,23 @@ public class Tele_Red extends LinearOpMode {
                 arm.lifting(0);
             }
 
-
-
-            driveTrain.drive(RC_Drive.red_leftXInverse * left_x *.5, RC_Drive.red_leftYInverse * left_y*.5, RC_Drive.red_rightXInverse * right_x, false);
+            driveTrain.drive(-RC_Drive.red_leftXInverse * left_x * .5, -RC_Drive.red_leftYInverse * left_y *.5, RC_Drive.red_rightXInverse * right_x, false);
 
             if (!endGameStarted) {
                 if (!myGamePad.isDown(GamepadKeys.Button.LEFT_BUMPER)) {
                     arm.manualMoveB(-right_y, false);
                 } else {
-                    arm.manualMoveA(-right_y, false);
+                    arm.manualMoveA(-right_y,  false);
                 }
                 arm.updateEverything();
             }
 
-            //telemetry.addData("x distance", driveTrain.getXDistance());
-            //telemetry.addData("y distance", driveTrain.getYDistance());
-            //telemetry.addData("yaw", TelemetryData.yaw);
-            //telemetry.addData("yaw offset from auto", RC_Drive.yaw_from_auto);
-            //telemetry.addData("wrist position", TelemetryData.wrist_position);
-            //telemetry.addData("maintain heading of", TelemetryData.whatHeadingDo);
+            telemetry.addData("x distance", driveTrain.getXDistance());
+            telemetry.addData("y distance", driveTrain.getYDistance());
+            telemetry.addData("yaw", TelemetryData.yaw);
+            telemetry.addData("yaw offset from auto", RC_Drive.yaw_from_auto);
+            telemetry.addData("wrist position", TelemetryData.wrist_position);
+            telemetry.addData("maintain heading of", TelemetryData.whatHeadingDo);
             telemetry.addData("telescope target", TelemetryData.telescope_target);
             telemetry.addData("shoulder target", TelemetryData.shoulder_target);
             telemetry.addData("lift stage", TelemetryData.liftStage);
@@ -186,7 +184,7 @@ public class Tele_Red extends LinearOpMode {
             //telemetry.addData("telescope power", TelemetryData.telescope_power);
             telemetry.addData("shoulder position", TelemetryData.shoulder_position);
             //telemetry.addData("shoulder power", TelemetryData.shoulder_power);
-            //telemetry.addData("shoulder switch", shoulder.isSwitchPressed());
+            telemetry.addData("shoulder switch", shoulder.isSwitchPressed());
             telemetry.update();
 
         }

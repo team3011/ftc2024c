@@ -14,7 +14,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
-import org.firstinspires.ftc.teamcode.RobotConstants.RC_AutoRed;
+import org.firstinspires.ftc.teamcode.RobotConstants.RC_AutoBlue;
+import org.firstinspires.ftc.teamcode.RobotConstants.RC_AutoBlue;
 import org.firstinspires.ftc.teamcode.RobotConstants.RC_Drive;
 import org.firstinspires.ftc.teamcode.RobotConstants.TelemetryData;
 import org.firstinspires.ftc.teamcode.Subsystems.Arm;
@@ -30,8 +31,8 @@ import org.firstinspires.ftc.teamcode.Subsystems.Wrist;
 
 import java.util.List;
 
-@Autonomous(name = "AUTO_RED_TRUCHON")
-public class Auto_Red_Truchon extends LinearOpMode{
+@Autonomous(name = "AUTO_BLUE_TRUCHON")
+public class Auto_Blue_Truchon extends LinearOpMode{
 
 
     List<Recognition> currentRecognitions;
@@ -39,7 +40,7 @@ public class Auto_Red_Truchon extends LinearOpMode{
     // @Override
     public void runOpMode() throws InterruptedException {
         boolean fromAuto = true;
-        boolean isRed = true;
+        boolean isRed = false;
         FtcDashboard dashboard = FtcDashboard.getInstance();
         telemetry = dashboard.getTelemetry();
         GamepadEx myGamePad = new GamepadEx(gamepad1);
@@ -73,7 +74,8 @@ public class Auto_Red_Truchon extends LinearOpMode{
                 hardwareMap.get(DcMotorEx.class, "backRight"),
                 navx,
                 fromAuto,
-                true);
+                false
+        );
 
 
         Arm arm = new Arm(shoulder, telescope, claw, lift, wrist, navx, blinkin, fromAuto, isRed);
@@ -103,55 +105,47 @@ public class Auto_Red_Truchon extends LinearOpMode{
 
         ring.setPower(1);
 
-        telemetry.addData("yaw", TelemetryData.yaw);
-        telemetry.addData("x distance", driveTrain.getXDistance());
-        telemetry.addData("y distance", driveTrain.getYDistance());
-        telemetry.addData("x power", TelemetryData.xPower);
-        telemetry.addData("y power", TelemetryData.yPower);
-        telemetry.update();
         int castle = 0;
         Point board = new Point(0, 0);
         Point spike = new Point(0, 0);
-        Point stack = new Point (RC_AutoRed.x_stack, RC_AutoRed.y_stack);
-        Point safe = new Point(RC_AutoRed.x_safe, RC_AutoRed.y_safe);
         while (!opModeIsActive()) {
-            if(visionCam.returnRecogs().size() != 0) {
+            telemetry.addData("bottom", 999);
+            if(!visionCam.returnRecogs().isEmpty()) {
                 currentRecognitions = visionCam.returnRecogs();
                 Recognition recognition = currentRecognitions.get(0);
-                if (recognition.getBottom() > RC_AutoRed.cameraLine) {
+                if (recognition.getBottom() > RC_AutoBlue.cameraLine) {
                     castle = 0;
                     blinkin.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
-                } else if (recognition.getBottom() < RC_AutoRed.cameraLine) {
+                } else if (recognition.getBottom() < RC_AutoBlue.cameraLine) {
                     castle = 1;
                     blinkin.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
                 }
                 telemetry.addData("bottom", recognition.getBottom());
-                telemetry.addData("castle", castle);
-                telemetry.update();
             }
             else  {
                 castle = -1;
                 blinkin.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
             }
+
             telemetry.addData("castle", castle);
             telemetry.update();
             arm.initialMove();
             arm.updateEverything();
         }
-        waitForStart();
 
         if (castle == 0) {
-            board.setXY(RC_AutoRed.x_center_board, RC_AutoRed.y_center_board);
-            spike.setXY(RC_AutoRed.x_center_spike, RC_AutoRed.y_center_spike);
+            board.setXY(RC_AutoBlue.x_center_board, RC_AutoBlue.y_center_board);
+            spike.setXY(RC_AutoBlue.x_center_spike, RC_AutoBlue.y_center_spike);
         }
         if (castle == 1) {
-            board.setXY(RC_AutoRed.x_right_board, RC_AutoRed.y_right_board);
-            spike.setXY(RC_AutoRed.x_right_spike, RC_AutoRed.y_right_spike);
+            board.setXY(RC_AutoBlue.x_right_board, RC_AutoBlue.y_right_board);
+            spike.setXY(RC_AutoBlue.x_right_spike, RC_AutoBlue.y_right_spike);
         }
         if (castle == -1) {
-            board.setXY(RC_AutoRed.x_left_board, RC_AutoRed.y_left_board);
-            spike.setXY(RC_AutoRed.x_left_spike, RC_AutoRed.y_left_spike);
+            board.setXY(RC_AutoBlue.x_left_board, RC_AutoBlue.y_left_board);
+            spike.setXY(RC_AutoBlue.x_left_spike, RC_AutoBlue.y_left_spike);
         }
+
 
         boolean shoulderWasMoving = false;
         boolean lifting = false;
@@ -166,10 +160,12 @@ public class Auto_Red_Truchon extends LinearOpMode{
         boolean armUpdateOverride = false;
         int lastY = 0;
 
+
         ElapsedTime resetTimer = new ElapsedTime();
         boolean startTimer = false;
         arm.initialMove();
-        blinkin.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
+
+        blinkin.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
         int autoRunStage = 0;
         boolean armCommand = false;
         while (opModeIsActive()) {
@@ -177,13 +173,13 @@ public class Auto_Red_Truchon extends LinearOpMode{
             double curY = driveTrain.getYDistance();
             if (autoRunStage == 0) {
                 //get away from the wall and the truss
-                driveTrain.drive(-.4, -.2, 0, true);
+                driveTrain.drive(.4,-.2,0, true);
                 //when far enough away, spin
-                if (curX < -50 && curY < -50) {
-                    driveTrain.setHeadingToMaintain(-1.57);
+                if (curX > 50 && curY < -50) {
+                    driveTrain.setHeadingToMaintain(1.57);
                 }
                 //move on if we have turned more than 80 degrees
-                if (TelemetryData.yaw < -80) {
+                if (TelemetryData.yaw > 80) {
                     autoRunStage = 1;
                     //driveTrain.drive(0,0,0, true);
                     //driveTrain.setToCoast();
@@ -196,8 +192,8 @@ public class Auto_Red_Truchon extends LinearOpMode{
                     driveTrain.setTarget(board.returnX(), board.returnY());
                     //driveTrain.setTarget(844,966);
                 }
-                if (driveTrain.updateV2(15, 15, .2, .2, 1)) {
-                    driveTrain.drive(0, 0, 0, true);
+                if (driveTrain.updateV2(15,15, .2, .2, -1)) {
+                    driveTrain.drive(0,0,0,true);
                     autoRunStage = 2;
                     armCommand = false;
                     resetTimer.reset();
@@ -220,7 +216,7 @@ public class Auto_Red_Truchon extends LinearOpMode{
                     armCommand = false;
                     resetTimer.reset();
                 }
-            } else if (autoRunStage == 3 && resetTimer.seconds() > 2) {
+            } else if (autoRunStage == 3 && resetTimer.seconds()>2) {
                 //move to the spike
                 if (!armCommand) {
                     driveTrain.setTarget(spike.returnX(), spike.returnY());
@@ -236,8 +232,8 @@ public class Auto_Red_Truchon extends LinearOpMode{
                      */
                     armCommand = true;
                 }
-                if (driveTrain.updateV2(10, 10, .2, .2, 1) && resetTimer.seconds() > 0.5) {
-                    driveTrain.drive(0, 0, 0, true);
+                if (driveTrain.updateV2(10,10, .2, .2, -1) && resetTimer.seconds() > 0.5) {
+                    driveTrain.drive(0,0,0,true);
                     autoRunStage = 4;
                     armCommand = false;
                     resetTimer.reset();
@@ -247,10 +243,10 @@ public class Auto_Red_Truchon extends LinearOpMode{
                 if (!armCommand) {
                     arm.moveToStow(0);
                     armCommand = true;
-                    driveTrain.setTarget(board.returnX()-500, board.returnY()-100);
+                    driveTrain.setTarget(board.returnX()+500, board.returnY()-100);
                 }
-                if (driveTrain.updateV2(10, 10, .2, .2, 1)) {
-                    driveTrain.drive(0, 0, 0, true);
+                if (driveTrain.updateV2(10,10, .2, .2, -1)) {
+                    driveTrain.drive(0,0,0,true);
                     autoRunStage = 5;
                     armCommand = false;
                     resetTimer.reset();
@@ -316,25 +312,26 @@ public class Auto_Red_Truchon extends LinearOpMode{
                  */
 
             arm.updateEverything();
-            // telemetry.addData("wrist pos", TelemetryData.wrist_position);
-            // telemetry.addData("collision detected", TelemetryData.collisionDetected);
-            telemetry.addData("yaw", TelemetryData.yaw);
+           // telemetry.addData("wrist pos", TelemetryData.wrist_position);
+           // telemetry.addData("collision detected", TelemetryData.collisionDetected);
+           telemetry.addData("yaw", TelemetryData.yaw);
             telemetry.addData("x distance", curX);
             telemetry.addData("y distance", curY);
             telemetry.addData("x_power", TelemetryData.xPower);
             telemetry.addData("y_power", TelemetryData.yPower);
-            // telemetry.addData("x power", TelemetryData.xPower);
+           // telemetry.addData("x power", TelemetryData.xPower);
             //telemetry.addData("y power", TelemetryData.yPower);
             telemetry.addData("autoRunStage", autoRunStage);
-            telemetry.addData("telescope target", TelemetryData.telescope_target);
-            telemetry.addData("shoulder target", TelemetryData.shoulder_target);
-            telemetry.addData("telescope position", TelemetryData.telescope_position);
-            // telemetry.addData("telescope power", TelemetryData.telescope_power);
-            telemetry.addData("shoulder position", TelemetryData.shoulder_position);
-            // telemetry.addData("shoulder power", TelemetryData.shoulder_power);
+           telemetry.addData("telescope target", TelemetryData.telescope_target);
+           telemetry.addData("shoulder target", TelemetryData.shoulder_target);
+           telemetry.addData("telescope position", TelemetryData.telescope_position);
+           // telemetry.addData("telescope power", TelemetryData.telescope_power);
+           telemetry.addData("shoulder position", TelemetryData.shoulder_position);
+           // telemetry.addData("shoulder power", TelemetryData.shoulder_power);
             //telemetry.addData("x diff", driveTrain.getDiffX());
             //telemetry.addData("y diff", driveTrain.getDiffY());
             telemetry.update();
+
         }
         RC_Drive.yaw_from_auto = TelemetryData.yaw;
     }

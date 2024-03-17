@@ -36,7 +36,7 @@ import org.firstinspires.ftc.teamcode.Subsystems.Wrist;
 
 
 import java.util.List;
-@Autonomous(name = "AUTO_RED")
+//@Autonomous(name = "AUTO_RED")
 public class Auto_Red extends LinearOpMode{
 
 
@@ -78,7 +78,9 @@ public class Auto_Red extends LinearOpMode{
                 hardwareMap.get(DcMotorEx.class, "backLeft"),
                 hardwareMap.get(DcMotorEx.class, "backRight"),
                 navx,
-                fromAuto);
+                fromAuto,
+                true);
+
 
 
         Arm arm = new Arm(shoulder, telescope, claw, lift, wrist, navx, blinkin, fromAuto, isRed);
@@ -196,7 +198,7 @@ public class Auto_Red extends LinearOpMode{
                         driveTrain.setTarget(RC_AutoRed.x_center_board, RC_AutoRed.y_center_board);
                     }
                 }
-                if (driveTrain.update(10,10, .3, .3)) {
+                if (driveTrain.update(10,10, .3, .3, 1)) {
                     driveTrain.drive(0,0,0,true);
                     autoRunStage = 2;
                     armCommand = false;
@@ -221,7 +223,7 @@ public class Auto_Red extends LinearOpMode{
                     arm.moveToPickup(true);
                     armCommand = true;
                 }
-                if (driveTrain.update(10,10, .3, .3)) {
+                if (driveTrain.update(10,10, .3, .3, 1)) {
                     autoRunStage = 4;
                     armCommand = false;
                     resetTimer.reset();
@@ -249,7 +251,7 @@ public class Auto_Red extends LinearOpMode{
                 if (driveTrain.getYDistance() < -200){
                     arm.prepStackAttack();
                 }
-                if (driveTrain.update(10, 10, .3, .3)) {
+                if (driveTrain.update(10, 10, .3, .3, 1)) {
                     autoRunStage = 6;
                     armCommand = false;
                     driveTrain.drive(0,0,0, true);
@@ -263,7 +265,7 @@ public class Auto_Red extends LinearOpMode{
                     driveTrain.setTarget(RC_AutoRed.x_safe, RC_AutoRed.y_safe);
                     armCommand = true;
                 }
-                if (driveTrain.update(10, 10, .3, .3)) {
+                if (driveTrain.update(10, 10, .3, .3, 1)) {
                     autoRunStage = 7;
                     armCommand = false;
                 }
@@ -273,7 +275,7 @@ public class Auto_Red extends LinearOpMode{
                     driveTrain.setTarget(RC_AutoRed.x_center_board, RC_AutoRed.y_center_board-10);
                     armCommand = true;
                 }
-                if (driveTrain.update(10, 10, .3, .3)) {
+                if (driveTrain.update(10, 10, .3, .3, 1)) {
                     driveTrain.drive(0,0,0, true);
                     autoRunStage = 8;
                     armCommand = false;

@@ -57,6 +57,10 @@ public class Telescope {
         this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
+    public void updatePosition(){
+        TelemetryData.telescope_position = this.motor.getCurrentPosition();
+    }
+
     public void manualMove(double input) {
         if (input != 0) {
             this.manualEngaged = true;

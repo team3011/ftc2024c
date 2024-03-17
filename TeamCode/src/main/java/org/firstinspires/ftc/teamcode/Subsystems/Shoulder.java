@@ -87,6 +87,10 @@ public class Shoulder {
         return power;
     }
 
+    public void updatePosition(){
+        TelemetryData.shoulder_position = this.motor.getCurrentPosition();
+    }
+
     /**
      * set target position of the shoulder
      * @param t the target position in tick marks,
@@ -179,6 +183,8 @@ public class Shoulder {
         }
         return power;
     }
+
+    public boolean isSwitchPressed() { return this.touch.isPressed(); }
 
     /**
      * calculate the feedforward value by taking the cosine of the target angle relative to the ground

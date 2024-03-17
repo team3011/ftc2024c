@@ -30,8 +30,8 @@ import org.firstinspires.ftc.teamcode.Subsystems.Wrist;
 
 import java.util.List;
 
-@Autonomous(name = "AUTO_RED_TRUCHON")
-public class Auto_Red_Truchon extends LinearOpMode{
+//@Autonomous(name = "AUTO_MEASUEE")
+public class Auto_Measure extends LinearOpMode{
 
 
     List<Recognition> currentRecognitions;
@@ -133,10 +133,6 @@ public class Auto_Red_Truchon extends LinearOpMode{
                 castle = -1;
                 blinkin.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
             }
-            telemetry.addData("castle", castle);
-            telemetry.update();
-            arm.initialMove();
-            arm.updateEverything();
         }
         waitForStart();
 
@@ -166,10 +162,11 @@ public class Auto_Red_Truchon extends LinearOpMode{
         boolean armUpdateOverride = false;
         int lastY = 0;
 
+
         ElapsedTime resetTimer = new ElapsedTime();
         boolean startTimer = false;
         arm.initialMove();
-        blinkin.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
+
         int autoRunStage = 0;
         boolean armCommand = false;
         while (opModeIsActive()) {
@@ -177,164 +174,42 @@ public class Auto_Red_Truchon extends LinearOpMode{
             double curY = driveTrain.getYDistance();
             if (autoRunStage == 0) {
                 //get away from the wall and the truss
-                driveTrain.drive(-.4, -.2, 0, true);
+                driveTrain.drive(.4,-.2,0, true);
                 //when far enough away, spin
-                if (curX < -50 && curY < -50) {
-                    driveTrain.setHeadingToMaintain(-1.57);
+                if (curX > 50 && curY < -50) {
+                    driveTrain.setHeadingToMaintain(1.57);
                 }
                 //move on if we have turned more than 80 degrees
-                if (TelemetryData.yaw < -80) {
+                if (TelemetryData.yaw > 80) {
                     autoRunStage = 1;
-                    //driveTrain.drive(0,0,0, true);
-                    //driveTrain.setToCoast();
                 }
             } else if (autoRunStage == 1) {
-                //move to backboard and prep to drop off
-                if (!armCommand) {
-                    arm.autoMoveToDropOff();
-                    armCommand = true;
-                    driveTrain.setTarget(board.returnX(), board.returnY());
-                    //driveTrain.setTarget(844,966);
-                }
-                if (driveTrain.updateV2(15, 15, .2, .2, 1)) {
-                    driveTrain.drive(0, 0, 0, true);
-                    autoRunStage = 2;
-                    armCommand = false;
-                    resetTimer.reset();
-                    //driveTrain.setToCoast();
-                }
-            } else if (autoRunStage == 2 && resetTimer.seconds() > 2) {
-                //move arm down before we move
-                if (!armCommand) {
-                    //arm.moveToStow(1);
-                    arm.autoStow();
-                    armCommand = true;
-
-                }
-
-                if (TelemetryData.shoulder_position < 10) {
-                    //driveTrain.drive(0,0,0,true);
-                    //driveTrain.setToCoast();
-                    arm.autoMoveToPickup();
-                    autoRunStage = 3;
-                    armCommand = false;
-                    resetTimer.reset();
-                }
-            } else if (autoRunStage == 3 && resetTimer.seconds() > 2) {
-                //move to the spike
-                if (!armCommand) {
-                    driveTrain.setTarget(spike.returnX(), spike.returnY());
-                    /*
-                    if (castle == 1) {
-
-                        arm.moveToPickupTruchon(true);
-                    }
-                    else {
-                        arm.moveToPickup(true);
-                    }
-
-                     */
-                    armCommand = true;
-                }
-                if (driveTrain.updateV2(10, 10, .2, .2, 1) && resetTimer.seconds() > 0.5) {
-                    driveTrain.drive(0, 0, 0, true);
-                    autoRunStage = 4;
-                    armCommand = false;
-                    resetTimer.reset();
-                }
-            } else if (autoRunStage == 4) {
-                //move to the center
-                if (!armCommand) {
-                    arm.moveToStow(0);
-                    armCommand = true;
-                    driveTrain.setTarget(board.returnX()-500, board.returnY()-100);
-                }
-                if (driveTrain.updateV2(10, 10, .2, .2, 1)) {
-                    driveTrain.drive(0, 0, 0, true);
-                    autoRunStage = 5;
-                    armCommand = false;
-                    resetTimer.reset();
-                }
+                driveTrain.drive(0,0,0, true);
+                resetTimer.reset();
+                autoRunStage = 2;
             }
-
-                /*
-                if (resetTimer.seconds() > 2) {
-                    driveTrain.drive(0, -.4, 0, true);
-                }
-                if (driveTrain.getXDistance() < -1300) {
-                    //driveTrain.drive(0,0,0, true);
-                    autoRunStage = 5;
-                    armCommand = false;
-                }
-            } else if (autoRunStage == 5) {
-                //move to the stack
-                if (!armCommand) {
-                    driveTrain.setTarget(RC_AutoBlue.x_stack, RC_AutoBlue.y_stack);
-                    armCommand = true;
-                }
-                if (driveTrain.getYDistance() < -200){
-                    arm.prepStackAttack();
-                }
-                if (driveTrain.updateV2(10, 10, .3, .3, -1)) {
-                    autoRunStage = 6;
-                    armCommand = false;
-                    driveTrain.drive(0,0,0, true);
-                    arm.stackAttack();
-                    resetTimer.reset();
-                }
-            } else if (autoRunStage == 6 && resetTimer.seconds() > 2) {
-                //driveTrain.setToCoast();
-                if (!armCommand) {
-                    arm.moveToStow(2);
-                    driveTrain.setTarget(RC_AutoBlue.x_safe, RC_AutoBlue.y_safe);
-                    armCommand = true;
-                }
-                if (driveTrain.updateV2(10, 10, .3, .3, -1)) {
-                    autoRunStage = 7;
-                    armCommand = false;
-                }
-            } else if (autoRunStage == 7) {
-                if (!armCommand) {
-                    arm.moveToDropOff();
-                    driveTrain.setTarget(RC_AutoBlue.x_center_board, RC_AutoBlue.y_center_board);
-                    armCommand = true;
-                }
-                if (driveTrain.updateV2(10, 10, .3, .3, -1)) {
-                    driveTrain.drive(0,0,0, true);
-                    autoRunStage = 8;
-                    armCommand = false;
-                    resetTimer.reset();
-                }
-            } else if (autoRunStage == 8) {
-                if (!armCommand && resetTimer.seconds()>2) {
-                    arm.moveToStow(2);
-                    armCommand = true;
-                    autoRunStage = 9;
-                }
+            else if (autoRunStage == 2  && resetTimer.seconds() > 1) {
+                driveTrain.setToCoast();
+                autoRunStage = 3;
             }
-
-                 */
 
             arm.updateEverything();
-            // telemetry.addData("wrist pos", TelemetryData.wrist_position);
-            // telemetry.addData("collision detected", TelemetryData.collisionDetected);
+            telemetry.addData("wrist pos", TelemetryData.wrist_position);
+            telemetry.addData("collision detected", TelemetryData.collisionDetected);
             telemetry.addData("yaw", TelemetryData.yaw);
-            telemetry.addData("x distance", curX);
-            telemetry.addData("y distance", curY);
-            telemetry.addData("x_power", TelemetryData.xPower);
-            telemetry.addData("y_power", TelemetryData.yPower);
-            // telemetry.addData("x power", TelemetryData.xPower);
-            //telemetry.addData("y power", TelemetryData.yPower);
+            telemetry.addData("x distance", driveTrain.getXDistance());
+            telemetry.addData("y distance", driveTrain.getYDistance());
+            telemetry.addData("x power", TelemetryData.xPower);
+            telemetry.addData("y power", TelemetryData.yPower);
             telemetry.addData("autoRunStage", autoRunStage);
             telemetry.addData("telescope target", TelemetryData.telescope_target);
             telemetry.addData("shoulder target", TelemetryData.shoulder_target);
             telemetry.addData("telescope position", TelemetryData.telescope_position);
-            // telemetry.addData("telescope power", TelemetryData.telescope_power);
+            telemetry.addData("telescope power", TelemetryData.telescope_power);
             telemetry.addData("shoulder position", TelemetryData.shoulder_position);
-            // telemetry.addData("shoulder power", TelemetryData.shoulder_power);
-            //telemetry.addData("x diff", driveTrain.getDiffX());
-            //telemetry.addData("y diff", driveTrain.getDiffY());
+            telemetry.addData("shoulder power", TelemetryData.shoulder_power);
             telemetry.update();
+
         }
         RC_Drive.yaw_from_auto = TelemetryData.yaw;
     }
