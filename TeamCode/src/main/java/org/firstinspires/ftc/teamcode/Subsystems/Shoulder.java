@@ -135,6 +135,21 @@ public class Shoulder {
         }
     }
 
+    /**
+     * this will limit the input to a range of -limiter to limiter
+     * @param input the value to be limited
+     * @param limiter the max value the input can be
+     * @return the limited input
+     */
+    private double limiter(double input, double limiter){
+        if (input > limiter) {
+            input = limiter;
+        } else if (input < -limiter) {
+            input = -limiter;
+        }
+        return input;
+    }
+
     private double calcPower() {
         double power = 0;
         this.controller.setPID(RC_Shoulder.kP, RC_Shoulder.kI, RC_Shoulder.kD);
